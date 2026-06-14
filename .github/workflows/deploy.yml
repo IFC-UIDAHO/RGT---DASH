@@ -13,8 +13,19 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
     steps:
+      # Until the NKN server + SSH secrets are configured, idle gracefully (green run,
+      # no failure emails) instead of trying to reach a server that doesn't exist yet.
+      - name: Auto-deploy not configured yet
+        if: env.DEPLOY_HOST == ''
+        run: |
+          echo "No DEPLOY_HOST secret set — auto-deploy is idle."
+          echo "Add DEPLOY_HOST / DEPLOY_USER / DEPLOY_SSH_KEY (see README_HOST.md) to enable it."
+
       - name: Pull & restart on the server
+        if: env.DEPLOY_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.DEPLOY_HOST }}
