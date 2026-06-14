@@ -1,0 +1,28 @@
+# /etc/systemd/system/rgt-dash.service
+# IFC Realized Gain Trial dashboard — gunicorn managed by systemd.
+# Adjust: User, WorkingDirectory, the venv path, the API key, and (if subpath) RGT_URL_PREFIX.
+[Unit]
+Description=IFC RGT Dashboard (Dash / gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/srv/rgt-dash
+
+# --- config / secrets (NOT in git) ---
+Environment=MINDROUTER_API_KEY=mr2_REPLACE_ME
+# Served under the /dashapp/ subpath — matches nginx + the public URL
+# https://ifc.nkn.uidaho.edu/dashapp/  (replaces the older dashboard at the same URL):
+Environment=RGT_URL_PREFIX=/dashapp/
+
+# --timeout 300 is REQUIRED: report builds take 20–60s.
+ExecStart=/srv/rgt-dash/venv/bin/gunicorn app:server --workers 2 --timeout 300 --bind 127.0.0.1:8050
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+
+# Enable once:
+#   sudo systemctl daemon-reload && sudo systemctl enable --now rgt-dash

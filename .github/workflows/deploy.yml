@@ -1,0 +1,23 @@
+name: deploy
+# Auto-deploy to the U-Idaho / NKN server on every push to main.
+# One-time: add three repo secrets under Settings → Secrets and variables → Actions:
+#   DEPLOY_HOST     e.g. ifc.nkn.uidaho.edu  (or the server's IP)
+#   DEPLOY_USER     the SSH user that owns /srv/rgt-dash
+#   DEPLOY_SSH_KEY  a private SSH key whose public key is in that user's authorized_keys
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # lets you trigger a deploy manually from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull & restart on the server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: bash /srv/rgt-dash/deploy/deploy.sh

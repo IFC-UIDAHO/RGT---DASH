@@ -1,0 +1,23 @@
+# ── Python ──
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+
+# ── Secrets — NEVER commit ──
+.env
+api_key.txt
+
+# ── OS / editor cruft ──
+.DS_Store
+Thumbs.db
+*.bak
+*.swp
+
+# ── Generated at runtime (rebuilt on every startup) ──
+assets/installations_map.html
+
+# stray test probes (sandbox could not delete)
+_probe*.txt
