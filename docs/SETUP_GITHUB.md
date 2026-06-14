@@ -20,8 +20,8 @@ git init
 REM D: drives don't record ownership, so git blocks with "dubious ownership".
 REM Trust this folder once (and set your name/email if git ever asks who you are):
 git config --global --add safe.directory D:/RGT_2026/RGT_APP
-git config --global user.email "pkjaslamagrico@gmail.com"
-git config --global user.name  "Jaslam"
+git config --global user.email "mjaslam@uidaho.edu"
+git config --global user.name  "pkjaslam"
 
 git branch -M main
 git add -A
