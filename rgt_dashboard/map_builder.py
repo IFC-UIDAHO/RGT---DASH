@@ -75,7 +75,7 @@ def build_map_data(store) -> list:
     try:
         from . import stats as _stats
     except ImportError:
-        return [dict(loc, gains={}, avg_gain=None) for loc in LOCATIONS if loc.get("csv")]
+        return [dict(loc, gains={}, avg_gain=None) for loc in LOCATIONS]
 
     metrics = list(store.metrics())
     years   = list(store.years())
@@ -83,7 +83,9 @@ def build_map_data(store) -> list:
     result = []
     for loc in LOCATIONS:
         if not loc.get("csv"):
-            continue  # no trial data at this location -> no pin on the map
+            # Installed site with no trial data yet — still show a (grey) pin.
+            result.append(dict(loc, gains={}, avg_gain=None, n_years=0))
+            continue
         entry = dict(loc)
         entry["gains"]    = {}
         entry["n_years"]  = 0
@@ -146,7 +148,7 @@ def generate_map_html(store) -> None:
         data = build_map_data(store)
     except Exception:
         traceback.print_exc()
-        data = [dict(loc, gains={}, avg_gain=None, n_years=0) for loc in LOCATIONS if loc.get("csv")]
+        data = [dict(loc, gains={}, avg_gain=None, n_years=0) for loc in LOCATIONS]
 
     json_blob = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     html_text = _TEMPLATE.replace("/*__RGT_DATA__*/[]", json_blob)

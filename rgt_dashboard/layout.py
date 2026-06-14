@@ -112,7 +112,7 @@ def _topbar(hero_items=None):
                     target="_blank",
                     style={"textDecoration": "none"},
                 ),
-                html.Span("v3.0", className="badge gold"),
+                html.Span("v2.0", className="badge gold"),
             ], className="topbar-right"),
         ], className="topbar-main"),
         # hero stats row removed per design — single clean header bar
