@@ -22,7 +22,7 @@ jobs:
         if: env.DEPLOY_HOST == ''
         run: |
           echo "No DEPLOY_HOST secret set — auto-deploy is idle."
-          echo "Add DEPLOY_HOST / DEPLOY_USER / DEPLOY_SSH_KEY (see README_HOST.md) to enable it."
+          echo "Add DEPLOY_HOST / DEPLOY_USER / DEPLOY_SSH_KEY (see docs/README_HOST.md) to enable it."
 
       - name: Pull & restart on the server
         if: env.DEPLOY_HOST != ''

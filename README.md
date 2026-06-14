@@ -1,141 +1,113 @@
-# IFC Realized Genetic Gain Trials — Dashboard (v2)
+# IFC Realized Genetic Gain Trials — Dashboard
 
 A Plotly **Dash** application for the Intermountain Forestry Cooperative
 (University of Idaho) that compares genetically **Improved** vs **Woods Run**
-Douglas‑fir seedlots and relates realized genetic gain to site growth factors.
+Douglas-fir seedlots across installations in two regions (Inland Northwest · INW,
+and Klamath–Siskiyou · K-S) and relates realized genetic gain to site growth
+factors — with an LLM **ForestTask** report assistant powered by MindRouter.
 
-This is a ground‑up refactor of the original single‑file `app.py` into a clean,
-tested package, with added forest‑biometrics statistics, a faster data layer, a
-modern UI, and an LLM **Report Assistant** powered by MindRouter.
+**Live:** https://ifc.nkn.uidaho.edu/dashapp/ · **Repo:** IFC-UIDAHO/RGT---DASH
 
 ---
 
-## Quickstart
+## Quickstart (run locally)
 
-```bash
-# 1. (recommended) create a virtual environment
+```bat
 python -m venv venv
-venv\Scripts\activate         # Windows
-# source venv/bin/activate    # macOS/Linux
-
-# 2. install dependencies
+venv\Scripts\activate            REM  Windows  (use: source venv/bin/activate on macOS/Linux)
 pip install -r requirements.txt
-
-# 3. run
-python app.py
-# open http://127.0.0.1:8050
+python app.py                    REM  then open http://127.0.0.1:8050
 ```
 
-Production:
-
-```bash
-gunicorn app:server -b 0.0.0.0:8050 -w 4
-```
-
-To enable the Report Assistant, copy `.env.example` to `.env`, add your
-MindRouter key, and restart (see **Report Assistant** below).
+To enable the report assistant, copy `.env.example` → `.env` and add your
+MindRouter key. Production: `gunicorn app:server -b 0.0.0.0:8050 -w 2 --timeout 300`.
 
 ---
 
-## What you get
+## Project layout
 
-The dashboard has three tabs, all driven by one shared control bar
-(Region · Installation · Year · Metric · Site type):
+```
+RGT_APP/                     ← this folder IS the git repo / deployable unit
+├── app.py                   thin launcher (honors RGT_URL_PREFIX for subpath hosting)
+├── requirements.txt         lean runtime deps
+├── Procfile                 gunicorn start command (--timeout 300)
+├── push.bat                 ← one-click: commit + push your changes to GitHub
+├── .env.example             template for the MindRouter key (.env is git-ignored)
+├── rgt_dashboard/           the application package
+│   ├── config.py            paths, palette, metric metadata, MindRouter settings
+│   ├── data.py              DataStore — loads CSV once, validates, pre-aggregates
+│   ├── stats.py             realized gain, Welch tests, CIs, Hedges g, regression
+│   ├── figures.py           themed chart factories
+│   ├── components.py        styled tables, KPI cards, headers
+│   ├── layout.py            page shell, tabs, ForestTask widget
+│   ├── callbacks.py         all callbacks (chat, reports, map, downloads)
+│   ├── map_builder.py       builds the Leaflet installations map at startup
+│   ├── assistant.py         MindRouter client
+│   └── report.py            the ForestTask report engine
+├── assets/                  styles.css, chat.js, loading animation, map
+├── data/                    trial CSVs (the app loads data/rgt24_new.csv)
+├── deploy/                  server config (systemd service, nginx, deploy.sh)
+└── docs/                    guides ↓
+    ├── SETUP_GITHUB.md      one-time GitHub setup + the daily update workflow
+    ├── README_HOST.md       one-page server setup for the NKN / IT team
+    └── DEPLOY.md            deployment options & background
+```
 
-**1. Plot Explorer** — for a chosen installation: a KPI strip (Woods Run mean,
-Improved mean, realized gain %, significance), the six per‑plot growth heatmaps
-(Woods Run plots 1–3, Improved plots 4–6) on a shared colour scale, the two
-mean‑by‑plot tables, and an Avg/Max/Min seedlot chart.
-
-**2. Genetic Gain & Summary** — aggregated across installations: KPIs, a
-**realized‑gain‑by‑site** bar chart (coloured by significance), a **gain vs site
-productivity** regression, a sortable/filterable site table (CSV export),
-grouped seedlot bars, tree‑level boxplots, and an installation comparison with
-standard errors.
-
-**3. Report Assistant** — a chat that drafts and interprets report text, grounded
-in the exact numbers currently shown (it will not invent figures).
+Heavy lifting (86k rows → plot/seedlot/installation summaries + mortality) happens
+**once** at startup in `DataStore`; callbacks slice cached frames.
 
 ---
 
-## Architecture
+## Updating the live site & hosting
 
-```
-app.py                     thin launcher (creates Dash app, wires package)
-rgt_dashboard/
-├── config.py              paths, palette, metric metadata, MindRouter settings
-├── data.py                DataStore — loads CSV once, validates, pre-aggregates
-├── stats.py               realized gain, Welch tests, CIs, Hedges g, regression
-├── figures.py             one factory per chart (themed, defensive)
-├── components.py          styled DataTable, KPI cards, headers, colour maps
-├── layout.py              page shell + three tabs
-├── callbacks.py           all callbacks (register(app, store))
-└── assistant.py           MindRouter client + report grounding
-assets/styles.css          single source of visual truth (no inline styles)
-data/rgt24_new.csv         trial data (Region,Installation,Source,Seedlot,PLOT,
-                           TREE,Replication,Year,Value,Metric,Management,Defect)
-preview.html               static UI snapshot (open without running the server)
-FINDINGS_RGT_2026.md        what the analytics currently show
-MIGRATION.md               what changed from the original app
-```
-
-The heavy lifting (86k rows → plot/seedlot/installation summaries + mortality)
-happens **once** at startup in `DataStore`; callbacks slice cached frames, and
-the cross‑installation gain table is memoised.
+- **Make a change → publish it:** double-click **`push.bat`** (commit + push). See
+  **[docs/SETUP_GITHUB.md](docs/SETUP_GITHUB.md)** for the one-time setup and how
+  auto-deploy makes the live site refresh on every push.
+- **Server setup (NKN / IT team):** **[docs/README_HOST.md](docs/README_HOST.md)** —
+  clone → venv → systemd service → nginx `/dashapp/` → GitHub SSH secrets.
+- **Background & alternatives:** **[docs/DEPLOY.md](docs/DEPLOY.md)**.
 
 ---
 
-## Statistics methodology (applied biometrics)
+## What the dashboard does
 
-* **Realized gain** = `100 × (Improved − Woods Run) / Woods Run`, per
+- **Plot Explorer** — per installation: KPIs, the six per-plot growth heatmaps
+  (Woods plots 1–3, Improved plots 4–6), mean-by-plot tables, Avg/Max/Min chart.
+- **Genetic Gain & Summary** — across installations: realized-gain-by-site bars
+  (coloured by significance), gain-vs-site-productivity regression, sortable site
+  table (CSV export), seedlot bars, boxplots, installation comparison.
+- **Installations map** — satellite map; each pin opens year-by-year growth
+  mini-plots (Improved vs Woods) with values on hover.
+- **ForestTask report assistant** — ask for a *report* and it builds a full,
+  downloadable document (charts + tables + written analysis), grounded strictly in
+  the computed numbers. It understands any combination of region / installation /
+  seedlot / year / metric, side-by-side comparisons, a deployment decision summary,
+  seedlot stability (G×E), and damage/risk — then self-reviews against an expert
+  rubric before finishing. Short questions get quick inline answers instead.
+
+---
+
+## Statistics methodology
+
+- **Realized gain** = `100 × (Improved − Woods Run) / Woods Run`, per
   installation × year × metric.
-* **Unit of replication** for the Improved‑vs‑Woods‑Run contrast is the
-  **seedlot (genetic‑entry) mean**. Because *source* is confounded with physical
-  plot (1–3 vs 4–6), the plots are pseudo‑replicates of source; the seedlots are
-  the genuine independent genetic samples. A Welch (unequal‑variance) *t*‑test is
-  used, with a 95 % CI on the difference and **Hedges g** as effect size.
-* **Significance stars**: `*` p<0.05, `**` p<0.01, `***` p<0.001, `ns` otherwise.
-* **Mortality** = share of tree records coded `DEAD` / `DEAD (REPLACEMENT)`.
-* **Gain vs productivity** uses the site's Woods Run mean as a productivity proxy
-  and reports an OLS fit (slope, r, p).
+- **Unit of replication** is the **seedlot (genetic-entry) mean** — because source
+  is confounded with physical plot, plots are pseudo-replicates; seedlots are the
+  genuine genetic samples. A Welch *t*-test gives a 95 % CI on the difference and
+  **Hedges g** as effect size. Stars: `*` p<0.05, `**` p<0.01, `***` p<0.001.
+- **Mortality** = share of records coded `DEAD` / `DEAD (REPLACEMENT)`.
+- **Gain vs productivity** uses the site's Woods Run mean as a productivity proxy
+  (OLS slope, r, p). **Kendall's W** measures cross-site ranking concordance (G×E).
 
-These tests are a **screening tool**. For inference‑grade conclusions, follow up
-with a mixed‑effects model (installation/replication as random effects).
+A screening tool — for inference-grade conclusions, follow up with a mixed-effects model.
 
 ---
 
-## Report Assistant (MindRouter)
+## Configuration
 
-MindRouter is U‑Idaho's OpenAI‑compatible LLM gateway. The assistant calls
-`/v1/chat/completions` and lists models from `/v1/models`. Configuration is via
-environment variables (see `.env.example`):
+- `MINDROUTER_API_KEY` (in `.env` locally, or the systemd service on the host) —
+  enables ForestTask. Other MindRouter settings are in `.env.example` / `config.py`.
+- `RGT_DATA_FILE` — point at a different CSV (same schema) without code changes.
+- `RGT_URL_PREFIX` — set to `/dashapp/` when serving under that subpath (matches nginx).
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `MINDROUTER_API_KEY` | — | Your `mr2_…` service key (required to enable chat) |
-| `MINDROUTER_BASE_URL` | `https://mindrouter.uidaho.edu/v1` | OpenAI‑compatible base URL |
-| `MINDROUTER_MODEL` | `llama3.3:70b` | Default model |
-
-Each message sends a compact JSON snapshot of the current Summary & Gain view as
-grounding context, with a system prompt that forbids inventing numbers. If the
-key is missing or the gateway is unreachable, the tab degrades gracefully with a
-clear message — it never crashes the app.
-
-**Security:** the key is read from the environment only; never commit `.env`.
-
----
-
-## Configuration & data swaps
-
-Set `RGT_DATA_FILE` to run the app against a different CSV with the same schema
-(e.g. a future `rgt25.csv`) without editing code. Brand colours, default
-selections, and the plot→source map live in `rgt_dashboard/config.py`.
-
----
-
-## Tests
-
-The build was verified end‑to‑end: every callback was exercised through Dash's
-real HTTP endpoint (validating JSON serialization of all figures/tables), and the
-statistics were checked against an independent SciPy computation. See
-`MIGRATION.md` for the full before/after.
+**Security:** the API key is read from the environment only — never commit `.env`.

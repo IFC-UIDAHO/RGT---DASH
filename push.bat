@@ -15,7 +15,7 @@ git rev-parse --is-inside-work-tree >nul 2>&1
 if errorlevel 1 (
   echo.
   echo  [!] This folder is not connected to GitHub yet.
-  echo      Do the one-time setup in SETUP_GITHUB.md first.
+  echo      Do the one-time setup in docs\SETUP_GITHUB.md first.
   echo.
   pause
   exit /b 1
@@ -49,7 +49,7 @@ git push
 if errorlevel 1 (
   echo.
   echo  [!] Push failed. Most likely you are not signed in to GitHub,
-  echo      or the remote is not set. See SETUP_GITHUB.md.
+  echo      or the remote is not set. See docs\SETUP_GITHUB.md.
 ) else (
   echo.
   echo  DONE - GitHub is updated.
