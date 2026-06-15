@@ -627,16 +627,20 @@ def _source_growth_series(df, metric, years):
 
 
 def _fig_productivity_scatter(gain_df, metric, rel):
-    """Realized gain (%) vs site productivity (Woods Run mean) — one point per site,
-    with the fitted regression line. Reveals whether gains are larger on poor or rich sites."""
-    d = gain_df.dropna(subset=["woods_mean", "gain_pct"])
+    """ABSOLUTE realized gain (Improved - Woods Run, metric units) vs site
+    productivity (Woods Run mean) — one point per site, with the fitted line.
+    Absolute gain (not %) avoids the denominator coupling that would bias a
+    gain-% regression against the Woods Run mean."""
+    unit = config.METRICS[metric]["unit"]
+    d = gain_df.dropna(subset=["woods_mean", "gain_abs"])
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=d["woods_mean"], y=d["gain_pct"], mode="markers+text",
+        x=d["woods_mean"], y=d["gain_abs"], mode="markers+text", customdata=d["gain_pct"],
         text=d["installation"], textposition="top center", textfont=dict(size=8),
-        marker=dict(size=11, color=[Color.POSITIVE if v >= 0 else Color.NEGATIVE for v in d["gain_pct"]],
+        marker=dict(size=11, color=[Color.POSITIVE if v >= 0 else Color.NEGATIVE for v in d["gain_abs"]],
                     line=dict(width=1, color="white")),
-        hovertemplate="%{text}<br>Site mean %{x:.1f}<br>Gain %{y:+.1f}%<extra></extra>", name="Sites"))
+        hovertemplate="%{text}<br>Woods Run mean %{x:.1f}<br>Gain %{y:+.2f} " + unit
+                      + "  (%{customdata:+.1f}%)<extra></extra>", name="Sites"))
     if rel and rel.get("n", 0) >= 3 and pd.notna(rel.get("slope")):
         xs = [float(d["woods_mean"].min()), float(d["woods_mean"].max())]
         ys = [rel["slope"] * x + rel["intercept"] for x in xs]
@@ -645,7 +649,7 @@ def _fig_productivity_scatter(gain_df, metric, rel):
     fig.add_hline(y=0, line_color=Color.MUTED, line_dash="dot")
     fig.update_xaxes(title=f"Site productivity — Woods Run mean {config.METRICS[metric]['short']} "
                            f"({config.METRICS[metric]['unit']})")
-    fig.update_yaxes(title="Realized gain (%)", ticksuffix="%")
+    fig.update_yaxes(title=f"Realized gain — Improved − Woods Run ({unit})")
     return _theme(fig, 360)
 
 
@@ -1048,15 +1052,20 @@ REPORT_SYS = (
     "This follows the standard realized-gain formula for forest tree improvement programs "
     "(White, Adams & Neale 2007, *Forest Genetics*, CABI; Zobel & Talbert 1984, *Applied Forest "
     "Tree Improvement*, Wiley). A positive value means genetically improved stock grew faster.\n"
+    "- Growth means (hence gain) are computed on SURVIVING ORIGINAL trees only: trees coded dead "
+    "or replacement are excluded, so genetic gain is not confounded with the younger age of "
+    "interplanted replacements. Mortality is analysed separately and counts those trees.\n"
     "- Statistical significance: Welch two-sample t-test on seedlot (genetic-entry) means \u2014 NOT "
     "individual tree means \u2014 to respect the pseudo-replication structure of progeny trials "
     "(Cotterill & Dean 1990, *Successful Tree Breeding with Index Selection*, CSIRO). "
     "Thresholds: * p<0.05, ** p<0.01, *** p<0.001. Non-significant results are inconclusive.\n"
     "- Gain vs site productivity: Pearson r between the Woods Run site mean (used as a proxy for "
-    "inherent site productivity) and realized gain %. A negative r indicates that gains are larger "
-    "on poorer sites \u2014 a common pattern in Douglas-fir breeding ('G\u00d7E interaction') described by "
-    "Stonecypher et al. (1996, *Silvae Genetica* 45:148-157) and White et al. (2007). A positive r "
-    "means gains are larger on better sites.\n"
+    "inherent site productivity) and ABSOLUTE realized gain (Improved - Woods Run, in metric units). "
+    "Absolute gain, not gain %, is used because gain % carries the Woods Run mean in its denominator, "
+    "so regressing it on that same mean would manufacture a spurious negative slope. A negative r "
+    "indicates that gains are larger on poorer sites \u2014 a common pattern in Douglas-fir breeding "
+    "('G\u00d7E interaction') described by Stonecypher et al. (1996, *Silvae Genetica* 45:148-157) and "
+    "White et al. (2007). A positive r means gains are larger on better sites.\n"
     "- CORE = main trial sites; TRANSFER = off-site climate-transfer tests.\n\n"
     "REPORTING RULES:\n"
     "Write professional, INTERPRETIVE Markdown prose. Use '- ' bullets for lists of findings. "
@@ -1085,24 +1094,35 @@ def _write_full_report(client, spec, data, outline="") -> str:
         f"{scope_line}\n"
         "If the request names a single year (e.g. 'year 1'), the SCOPE above already restricts the "
         "data to that year \u2014 discuss ONLY that year; never report other years.\n\n"
-        "Use these Markdown sections (## headings). Be thorough \u2014 this is a formal technical report, "
-        "not a summary; aim for depth and use EVERY relevant number in the DATA:\n"
-        "## Executive summary \u2014 the scope and the headline answer to the request.\n"
-        "## Realized genetic gain \u2014 Improved vs Woods Run for the scope, broken down by year and "
-        "metric: magnitudes, direction, statistical significance (cite p / stars), and which sites or "
+        "Structure the report with EXACTLY these eight Markdown section headings, in this order, each "
+        "written verbatim as a '## ' heading with NOTHING appended \u2014 no dash, no colon, no description "
+        "on the heading line. The heading is the short title only:\n"
+        "## Executive summary\n"
+        "## Realized genetic gain\n"
+        "## Site / installation detail\n"
+        "## Seedlot detail\n"
+        "## Plot-level & spatial pattern\n"
+        "## Survival & defects\n"
+        "## Key findings\n"
+        "## Caveats & recommendations\n\n"
+        "Be thorough \u2014 this is a formal technical report, not a summary; aim for depth and use EVERY "
+        "relevant number in the DATA. Content for each section (write this as the body BELOW the heading, "
+        "never in the heading itself):\n"
+        "- Executive summary: the scope and the headline answer to the request.\n"
+        "- Realized genetic gain: Improved vs Woods Run for the scope, broken down by year and metric "
+        "\u2014 magnitudes, direction, statistical significance (cite p / stars), and which sites or "
         "entities drive the result.\n"
-        "## Site / installation detail \u2014 go installation-by-installation where the DATA provides it: "
-        "per-installation gain, the best- and worst-performing sites with numbers.\n"
-        "## Seedlot detail \u2014 if the DATA contains per-seedlot or seedlot-ranking figures, name the "
-        "standout seedlots (best AND worst, with numbers) and how individual seedlots behave across "
-        "installations.\n"
-        "## Plot-level & spatial pattern \u2014 if the DATA contains per-plot means "
-        "('installations_plot_means'), interpret the plot layout: how Woods plots (1-3) compare with "
-        "Improved plots (4-6), and any within-site spatial variability.\n"
-        "## Survival & defects \u2014 if the DATA contains survival/defect figures, report mortality and "
-        "defect rates by source and the growth-vs-survival trade-off.\n"
-        "## Key findings \u2014 5-9 '- ' bullets of the most decision-relevant results, each citing a number.\n"
-        "## Caveats & recommendations \u2014 limitations and cautious, practical recommendations.\n\n"
+        "- Site / installation detail: go installation-by-installation where the DATA provides it; the "
+        "best- and worst-performing sites with numbers.\n"
+        "- Seedlot detail: if the DATA contains per-seedlot or seedlot-ranking figures, name the standout "
+        "seedlots (best AND worst, with numbers) and how individual seedlots behave across installations.\n"
+        "- Plot-level & spatial pattern: if the DATA contains per-plot means ('installations_plot_means'), "
+        "interpret the plot layout \u2014 how Woods plots (1-3) compare with Improved plots (4-6) and any "
+        "within-site spatial variability.\n"
+        "- Survival & defects: if the DATA contains survival/defect figures, report mortality and defect "
+        "rates by source and the growth-vs-survival trade-off.\n"
+        "- Key findings: 5-9 '- ' bullets of the most decision-relevant results, each citing a number.\n"
+        "- Caveats & recommendations: limitations and cautious, practical recommendations.\n\n"
         "RULES: Answer the SPECIFIC request; never fall back to a generic whole-trial summary when a "
         "particular entity, filter or year was asked for. Cover EVERY metric present in the DATA "
         "(caliper, height AND volume) unless the request named fewer — never report only one metric "
@@ -1214,15 +1234,45 @@ def _evidence_outline(sections) -> str:
     return "\n".join(lines)
 
 
+# Canonical narrative section titles. If the model ever echoes the prompt's
+# guidance into a heading (e.g. "## Key findings — 5-9 bullets ..."), collapse it
+# back to the clean title.
+_REPORT_HEADINGS = (
+    "Executive summary", "Realized genetic gain", "Site / installation detail",
+    "Seedlot detail", "Plot-level & spatial pattern", "Survival & defects",
+    "Key findings", "Caveats & recommendations",
+)
+
+
+def _normalize_headings(md: str) -> str:
+    """Force every Markdown heading that starts with a known section title down to
+    just that title, stripping any dash/colon guidance the model appended."""
+    if not md:
+        return md
+    out = []
+    for line in md.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("#"):
+            hashes = stripped[:len(stripped) - len(stripped.lstrip("#"))]
+            title = stripped[len(hashes):].strip()
+            low = title.lower()
+            for h in _REPORT_HEADINGS:
+                if low.startswith(h.lower()) and low != h.lower():
+                    line = f"{hashes} {h}"
+                    break
+        out.append(line)
+    return "\n".join(out)
+
+
 def _compose_report(client, spec, data, evidence) -> str:
     """Full generation pipeline: DRAFT -> expert CRITIQUE -> REVISE. Each stage falls
-    back safely to the previous result so a report is always produced."""
+    back safely to the previous result so a report is always produced. The final
+    Markdown is heading-normalized so section titles are always clean."""
     outline = _evidence_outline(evidence)
     draft = _write_full_report(client, spec, data, outline)
     critique = _critique_report(client, spec, data, draft)
-    if not critique:
-        return draft
-    return _revise_report(client, spec, data, draft, critique)
+    final = draft if not critique else _revise_report(client, spec, data, draft, critique)
+    return _normalize_headings(final)
 
 
 def _fallback_full(spec, data) -> str:

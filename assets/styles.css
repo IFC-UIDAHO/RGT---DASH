@@ -225,6 +225,12 @@ a { color: inherit; }
   border: 1px solid var(--border) !important;
 }
 .dd-wrap { flex: 1 1 150px; min-width: 130px; max-width: 240px; }
+/* Installation / Site Type are wrapped (for dimming); make the wrapper size like
+   a bare dropdown so all five controls share the same width. */
+#installation-wrap, #insttype-wrap { flex: 1 1 150px; min-width: 130px; max-width: 240px; }
+#installation-wrap > .dd-wrap, #insttype-wrap > .dd-wrap {
+  flex: none; min-width: 0; max-width: none; width: 100%;
+}
 .dd-label {
   display: block;
   font-size: 10px;
@@ -440,6 +446,18 @@ a { color: inherit; }
   flex-shrink: 0;
 }
 .section-subtitle { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+/* Stacked, divider-led section header used to group the long Summary tab. */
+.sum-section {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  margin: 30px 0 4px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.sum-section:first-of-type { border-top: none; padding-top: 4px; margin-top: 16px; }
+.sum-section .section-subtitle { font-size: 12px; }
 
 /* ================================================================
    CHART CARDS
@@ -1227,3 +1245,62 @@ a { color: inherit; }
   opacity:1; transition:opacity .55s ease; }
 .report-loading iframe{ width:100%; height:100%; border:none; display:block; }
 .report-overlay.revealed .report-loading{ opacity:0; pointer-events:none; }
+
+/* ---------- Accessibility pass: keyboard focus + significance key ---------- */
+/* The info "i" marker is now keyboard-focusable (tabIndex=0); give it and the
+   icon-only topbar buttons a visible focus ring, matching the existing block. */
+.card-info:focus-visible,
+.topbar-btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.card-info:focus-visible { background: var(--navy); color: #fff; border-color: var(--navy); }
+/* Significance legend shown on the Explorer & Summary tabs. */
+.sig-key { font-size: 12px; line-height: 1.5; }
+/* FDR (multiple-comparison) toggle on the Summary tab. */
+.fdr-toggle { font-size: 12px; color: var(--ink-2, #334155); white-space: nowrap; }
+.fdr-toggle label { cursor: pointer; display: inline-flex; align-items: center; }
+
+/* ---------- Methods & definitions modal + data-version banner ---------- */
+.methods-modal { position: fixed; inset: 0; z-index: 1000; display: flex;
+  align-items: center; justify-content: center; background: rgba(15,27,45,.45);
+  opacity: 1; transition: opacity .2s ease; }
+.methods-modal.closed { opacity: 0; pointer-events: none; }
+.methods-card { background: var(--surface, #fff); color: var(--ink, #0f1b2d);
+  width: min(680px, 92vw); max-height: 86vh; overflow: auto; border-radius: 14px;
+  box-shadow: 0 18px 60px rgba(0,0,0,.35); padding: 0 22px 22px; }
+.methods-head { position: sticky; top: 0; background: var(--surface, #fff);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0 8px; border-bottom: 1px solid var(--border, #dce3ea); }
+.methods-head h5 { margin: 0; font-size: 16px; }
+.methods-body { font-size: 13.5px; line-height: 1.6; }
+.methods-body h3 { font-size: 13.5px; margin: 14px 0 4px; color: var(--navy, #16467a); }
+.modal-close {
+  background: var(--surface-2, #f7f9fc); border: 1px solid var(--border, #dce3ea);
+  color: var(--ink, #0f1b2d); border-radius: 50%; width: 30px; height: 30px;
+  font-size: 15px; line-height: 1; cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-close:hover { background: var(--surface-3, #eef2f7); }
+/* "Open the full User Manual" link inside the Methods modal. */
+.manual-link {
+  display: inline-flex; align-items: center; gap: 6px; margin: 12px 0 6px;
+  padding: 9px 16px; background: var(--navy); color: #fff !important;
+  text-decoration: none; border-radius: 10px; font-weight: 600; font-size: 13.5px;
+  box-shadow: var(--shadow-sm); transition: background var(--transition);
+}
+.manual-link:hover { background: var(--navy-mid, #1e5ea0); }
+/* Chat pending area (optimistic user bubble + typing dots) collapses when empty. */
+.chat-pending:empty { display: none; }
+
+/* ---------- Deployment decision card (Plot Explorer) ---------- */
+.deploy-card { background: var(--surface, #fff); border: 1px solid var(--border, #dce3ea);
+  border-radius: 12px; padding: 14px 16px; margin: 4px 0 14px;
+  box-shadow: 0 1px 6px rgba(15,27,45,.05); }
+.deploy-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.deploy-badge { color: #fff; font-weight: 700; font-size: 13px; letter-spacing: .02em;
+  padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
+.deploy-headline { font-size: 13.5px; color: var(--ink, #0f1b2d); font-weight: 600; }
+.deploy-evidence { margin: 10px 0 6px; padding-left: 20px; font-size: 12.5px;
+  color: var(--ink-2, #334155); line-height: 1.7; }
+.deploy-foot { font-size: 11px; color: var(--muted, #5b6671); }

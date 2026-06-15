@@ -71,13 +71,21 @@ Heavy lifting (86k rows → plot/seedlot/installation summaries + mortality) hap
 
 ## What the dashboard does
 
-- **Plot Explorer** — per installation: KPIs, the six per-plot growth heatmaps
-  (Woods plots 1–3, Improved plots 4–6), mean-by-plot tables, Avg/Max/Min chart.
-- **Genetic Gain & Summary** — across installations: realized-gain-by-site bars
-  (coloured by significance), gain-vs-site-productivity regression, sortable site
-  table (CSV export), seedlot bars, boxplots, installation comparison.
-- **Installations map** — satellite map; each pin opens year-by-year growth
-  mini-plots (Improved vs Woods) with values on hover.
+Two tabs (Plot Explorer · Genetic Gain & Summary); the installations map and the
+Methods/definitions panel open as overlays from the topbar icons. A full
+**[workshop user manual](../RGT_User_Manual.html)** documents every screen.
+
+- **Plot Explorer** — per installation: KPIs, a deterministic **deployment decision
+  card** (deploy / caution / hold), the six per-plot growth heatmaps (Woods plots
+  1–3, Improved plots 4–6), mean-by-plot tables, Avg/Max/Min chart.
+- **Genetic Gain & Summary** — across installations, in four sections: the
+  Woods→Improved **dumbbell** with 95% CI whiskers + significance rings (and an
+  **FDR-adjust** toggle), gain-vs-productivity (absolute gain), the site gain &
+  survival table + per-seedlot table (CSV export), seedlot bars / boxplots /
+  installation comparison, and a **Survival & damage** panel (mortality by site +
+  top damage agents).
+- **Installations map** — satellite map (topbar globe); each pin opens year-by-year
+  growth mini-plots (Improved vs Woods), then "View in Dashboard".
 - **ForestTask report assistant** — ask for a *report* and it builds a full,
   downloadable document (charts + tables + written analysis), grounded strictly in
   the computed numbers. It understands any combination of region / installation /
@@ -91,6 +99,10 @@ Heavy lifting (86k rows → plot/seedlot/installation summaries + mortality) hap
 
 - **Realized gain** = `100 × (Improved − Woods Run) / Woods Run`, per
   installation × year × metric.
+- **Growth cohort** — all growth means (and therefore gain) are computed on the
+  **surviving original trees only**: rows coded `DEAD` / `DEAD (REPLACEMENT)` are
+  excluded, because interplanted replacements are a younger cohort and would
+  confound genetic gain with planting age. Mortality (below) still counts them.
 - **Unit of replication** is the **seedlot (genetic-entry) mean** — because source
   is confounded with physical plot, plots are pseudo-replicates; seedlots are the
   genuine genetic samples. A Welch *t*-test gives a 95 % CI on the difference and

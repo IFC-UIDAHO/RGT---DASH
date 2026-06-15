@@ -79,10 +79,13 @@ def chart_card(title, graph, *, info=None, tools=None, body_class="", icon=None)
     """Card wrapper for a chart with optional emoji icon, info tooltip, and tools."""
     head = []
     if icon:
-        head.append(html.Span(icon, className="card-icon"))
+        head.append(html.Span(icon, className="card-icon", **{"aria-hidden": "true"}))
     head.append(html.Span(title, className="card-title"))
     if info:
-        head.append(html.Span("i", className="card-info", title=info))
+        # Focusable + labelled so the tip is reachable by keyboard and announced
+        # by screen readers (a bare title= attribute is neither).
+        head.append(html.Span("i", className="card-info", title=info, tabIndex=0,
+                              role="note", **{"aria-label": "Info: " + info}))
     if tools:
         head.append(html.Div(tools, className="card-tools"))
     return html.Div([
@@ -107,7 +110,7 @@ def kpi(label, value, sub=None, accent=Color.NAVY, icon=None,
     """
     top = [html.Div(label, className="kpi-label")]
     if icon:
-        top.append(html.Div(icon, className="kpi-icon"))
+        top.append(html.Div(icon, className="kpi-icon", **{"aria-hidden": "true"}))
 
     sub_children = []
     if sub:
@@ -130,11 +133,12 @@ def kpi(label, value, sub=None, accent=Color.NAVY, icon=None,
                     style={"borderTop": "3px solid " + accent})
 
 
-def dropdown(dd_id, options, value, label=None, clearable=False):
+def dropdown(dd_id, options, value, label=None, clearable=False, persistence=False):
     opts = [{"label": o, "value": o} if not isinstance(o, dict) else o
             for o in options]
     inner = dcc.Dropdown(id=dd_id, options=opts, value=value,
-                         clearable=clearable, className="rgt-dd")
+                         clearable=clearable, className="rgt-dd",
+                         persistence=persistence, persistence_type="local")
     if label:
         return html.Div(
             [html.Label(label, className="dd-label"), inner],

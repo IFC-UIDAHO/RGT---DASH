@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RGT Dashboard — User Manual</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']] }, svg: { fontCache: 'global' } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js" id="MathJax-script" async></script>
+<style>
+:root{
+  --navy:#16467a; --navy-dark:#0d2d52; --gold:#c8930a; --gold-soft:#f0b429;
+  --woods:#2F6E8F; --improved:#c96a00; --positive:#0a7a4e; --negative:#b91c1c;
+  --ink:#0f1b2d; --ink2:#334155; --muted:#5b7091; --border:#dde4ee;
+  --bg:#eef2f7; --surface:#ffffff; --surface2:#f7f9fc;
+  --radius:14px; --shadow:0 2px 4px rgba(15,27,45,.07),0 6px 20px rgba(15,27,45,.06);
+  --font:'Inter',-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap');
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;}
+.layout{display:grid;grid-template-columns:288px 1fr;max-width:1400px;margin:0 auto;}
+/* ---- Sidebar TOC ---- */
+nav.toc{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;background:linear-gradient(160deg,var(--navy-dark),var(--navy));color:#dce6f3;padding:22px 18px 40px;}
+nav.toc .brand{font-weight:800;font-size:17px;color:#fff;letter-spacing:.2px;margin-bottom:2px;}
+nav.toc .brand small{display:block;font-weight:500;font-size:11.5px;color:#9db8d6;letter-spacing:.4px;margin-top:3px;}
+nav.toc a{display:block;color:#c4d6ec;text-decoration:none;font-size:13.2px;padding:5px 10px;border-radius:7px;margin:1px 0;transition:background .15s,color .15s;}
+nav.toc a:hover{background:rgba(255,255,255,.09);color:#fff;}
+nav.toc a.h2{padding-left:22px;font-size:12.4px;color:#9db8d6;}
+nav.toc .group{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:#7fa0c8;margin:18px 0 4px 10px;font-weight:700;}
+/* ---- Main ---- */
+main{padding:0 0 80px;background:var(--bg);min-width:0;}
+.hero{background:linear-gradient(150deg,var(--navy-dark) 0%,var(--navy) 55%,#1e5ea0 100%);color:#fff;padding:54px 48px 46px;position:relative;overflow:hidden;}
+.hero::after{content:'';position:absolute;right:-90px;top:-90px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.08),transparent 68%);}
+.hero h1{font-size:34px;margin:0 0 8px;font-weight:800;letter-spacing:-.4px;}
+.hero p{font-size:16px;color:#cfe0f3;margin:0;max-width:760px;}
+.hero .tag{display:inline-block;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;margin-bottom:16px;}
+section.doc{padding:34px 48px 8px;}
+section.doc:nth-of-type(even){background:var(--surface);}
+h2{font-size:24px;font-weight:800;color:var(--navy);margin:8px 0 4px;padding-top:8px;letter-spacing:-.3px;}
+h2 .num{color:var(--gold);font-weight:800;margin-right:10px;}
+h3{font-size:18px;font-weight:700;color:var(--ink);margin:26px 0 6px;}
+h4{font-size:15px;font-weight:700;color:var(--navy);margin:18px 0 4px;}
+p{margin:8px 0;}
+.lead{font-size:16.5px;color:var(--ink2);}
+ul,ol{margin:8px 0 8px;padding-left:22px;}
+li{margin:4px 0;}
+a{color:var(--navy);}
+code{background:#eef2f7;border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-size:13px;font-family:'SFMono-Regular',Consolas,monospace;color:#0b3a66;}
+pre{background:#0d2138;color:#dce8f5;border-radius:10px;padding:16px 18px;overflow-x:auto;font-size:13px;line-height:1.55;font-family:'SFMono-Regular',Consolas,monospace;}
+pre .c{color:#7fa0c8;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 22px;margin:16px 0;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+.callout{border-left:4px solid var(--gold);background:var(--gold-pale,#fff7e0);border-radius:0 10px 10px 0;padding:12px 18px;margin:16px 0;font-size:14px;}
+.callout.note{border-color:var(--navy);background:#eef4fb;}
+.callout.warn{border-color:var(--negative);background:#fef2f2;}
+.callout.tip{border-color:var(--positive);background:#ecfdf5;}
+.callout b{color:var(--ink);}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px;background:var(--surface);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);}
+th{background:var(--navy);color:#fff;text-align:left;padding:9px 12px;font-weight:600;font-size:12.5px;}
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+tr:nth-child(even) td{background:var(--surface2);}
+.eqn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:6px 18px;margin:14px 0;overflow-x:auto;}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;color:#fff;}
+.pill.w{background:var(--woods);} .pill.i{background:var(--improved);}
+.pill.pos{background:var(--positive);} .pill.neg{background:var(--negative);} .pill.gold{background:var(--gold);}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0;}
+@media(max-width:760px){.kpis{grid-template-columns:1fr 1fr;}}
+.kpibox{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--navy);border-radius:10px;padding:12px 14px;}
+.kpibox .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;}
+.kpibox .v{font-size:20px;font-weight:800;color:var(--navy);}
+.kpibox .s{font-size:11.5px;color:var(--muted);}
+.steps{counter-reset:step;list-style:none;padding-left:0;}
+.steps li{position:relative;padding:6px 0 6px 42px;margin:6px 0;}
+.steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:4px;width:28px;height:28px;background:var(--navy);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;margin-right:18px;font-size:13px;}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+footer{padding:30px 48px;color:var(--muted);font-size:13px;border-top:1px solid var(--border);background:var(--surface);}
+.toplink{font-size:12px;color:var(--muted);text-decoration:none;float:right;}
+@media(max-width:980px){.layout{grid-template-columns:1fr;}nav.toc{position:static;height:auto;}section.doc,.hero,footer{padding-left:22px;padding-right:22px;}}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<nav class="toc">
+  <div class="brand">RGT Dashboard<small>Workshop User Manual · v2</small></div>
+  <div class="group">Get oriented</div>
+  <a href="#overview">1 · What, why &amp; who</a>
+  <a href="#trial">2 · The trial behind it</a>
+  <a href="#tour">3 · A 2-minute tour</a>
+  <a href="#controls">4 · The filter bar</a>
+  <div class="group">The tabs</div>
+  <a href="#explorer">5 · Plot Explorer</a>
+  <a href="#summary">6 · Genetic Gain &amp; Summary</a>
+  <a href="#summary" class="h2">6.1 Realized gain</a>
+  <a href="#summary-detail" class="h2">6.2 Site-by-site detail</a>
+  <a href="#summary-dist" class="h2">6.3 Distributions</a>
+  <a href="#summary-surv" class="h2">6.4 Survival &amp; damage</a>
+  <a href="#map">7 · Installations map</a>
+  <a href="#assistant">8 · ForestTask assistant</a>
+  <div class="group">Reference</div>
+  <a href="#methods">9 · Methods &amp; equations</a>
+  <a href="#reading">10 · Reading every plot</a>
+  <a href="#recipes">11 · How-to recipes</a>
+  <a href="#setup">12 · Setup &amp; construction</a>
+  <a href="#caveats">13 · Caveats &amp; good practice</a>
+  <a href="#glossary">14 · Glossary</a>
+</nav>
+
+<main>
+<div class="hero">
+  <span class="tag">Intermountain Forestry Cooperative · University of Idaho</span>
+  <h1>Realized Genetic Gain Trials — Dashboard User Manual</h1>
+  <p>Everything you need to read, interrogate and report on the IFC Douglas-fir Realized Gain Trials:
+  what the tool is, the science behind it, every plot and table, the report assistant, the equations,
+  and how to run it. Written for the workshop.</p>
+</div>
+
+<!-- ===================== 1 ===================== -->
+<section class="doc" id="overview">
+  <h2><span class="num">1</span>What it is, why it exists, and who it's for</h2>
+  <p class="lead">The RGT dashboard turns ~86,400 tree measurements into clear answers to one practical
+  question: <b>is genetically improved Douglas-fir seed worth deploying, where, and how confident can we be?</b></p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>What</h4>
+      <p>An interactive web dashboard (Plotly&nbsp;Dash) that compares genetically <span class="pill i">Improved</span>
+      seedlots against local <span class="pill w">Woods&nbsp;Run</span> (unimproved) checks across Douglas-fir installations in two
+      regions, over three measurement years and three growth metrics — and quantifies the
+      <b>realized genetic gain</b>, its statistical significance, and the survival trade-off.</p>
+    </div>
+    <div class="card">
+      <h4>Why</h4>
+      <p>Progeny tests predict gain; only a <b>Realized Gain Trial</b> confirms it under operational conditions.
+      Members need a defensible, at-a-glance read on whether to plant improved stock — and a way to generate
+      a written, numbers-grounded report for a stand, region or seedlot in a couple of minutes.</p>
+    </div>
+  </div>
+
+  <h3>Who should use it</h3>
+  <table>
+    <tr><th>Audience</th><th>What they get</th></tr>
+    <tr><td>Co-op members / foresters</td><td>A deploy / hold call per site, mortality risk, and a downloadable report.</td></tr>
+    <tr><td>Researchers / biometricians</td><td>Effect sizes, confidence intervals, significance (raw &amp; FDR-adjusted), G×E.</td></tr>
+    <tr><td>Managers / funders</td><td>Regional summaries and trend reports without touching the raw data.</td></tr>
+  </table>
+
+  <h3>Where it lives</h3>
+  <p>It runs in a browser. Hosted at <code>ifc.nkn.uidaho.edu/dashapp/</code> for members, and can be run locally
+  by the IT/host team (see <a href="#setup">§12</a>). No install is needed for everyday users — just a link.</p>
+</section>
+
+<!-- ===================== 2 ===================== -->
+<section class="doc" id="trial">
+  <h2><span class="num">2</span>The trial behind the numbers</h2>
+  <p>The dashboard is a <em>window onto a field experiment</em>. Understanding the design makes every chart read clearly.</p>
+
+  <h3>The comparison</h3>
+  <p>At each installation, two seed sources are planted side by side:</p>
+  <ul>
+    <li><span class="pill i">Improved</span> — first-generation elite families selected from IETIC progeny trials (top volume performers).</li>
+    <li><span class="pill w">Woods Run</span> — local, unimproved seed native to the same seed zone — the operational baseline (the "check").</li>
+  </ul>
+  <p>Their difference in growth, expressed as a percentage of the Woods Run baseline, is the <b>realized genetic gain</b>.</p>
+
+  <h3>The layout of one installation</h3>
+  <p>Each installation has <b>6 plots</b>. Plots 1–3 are Woods Run; plots 4–6 are Improved. Each plot is an
+  inner <b>10×10 monitored grid</b> (100 trees) inside a 12×12 planting, the outer ring acting as a buffer.
+  Ten elite families and ten woods-run sources are randomly planted and tracked individually, so the dashboard
+  can compare both <i>bulk</i> and <i>individual seedlot</i> performance.</p>
+  <div class="callout note"><b>Why this matters for the stats:</b> because <i>source</i> is confounded with
+  <i>physical plot</i>, the plots are pseudo-replicates. The genuine independent unit is the
+  <b>seedlot (genetic entry) mean</b> — which is exactly what the significance tests use (see <a href="#methods">§9</a>).</div>
+
+  <h3>Scope of the data</h3>
+  <div class="kpis">
+    <div class="kpibox"><div class="l">Regions</div><div class="v">2</div><div class="s">INW · K-S</div></div>
+    <div class="kpibox"><div class="l">Installations</div><div class="v">16</div><div class="s">measured</div></div>
+    <div class="kpibox"><div class="l">Years</div><div class="v">3</div><div class="s">Year1–Year3</div></div>
+    <div class="kpibox"><div class="l">Metrics</div><div class="v">3</div><div class="s">caliper · height · volume</div></div>
+  </div>
+  <ul>
+    <li><b>INW</b> — Inland Northwest (Idaho / Washington). <b>K-S</b> — Klamath–Siskiyou (southern Oregon).</li>
+    <li><b>CORE</b> sites test gain within the home seed zone. <b>TRANSFER</b> sites test seed moved from a
+    warmer/drier zone (a climate-adaptation question).</li>
+    <li>Metrics: <b>caliper</b> growth (mm), <b>height</b> growth (cm), <b>volume</b> growth (cm³).</li>
+    <li><b>Year 3 is under-sampled</b> (only a few sites measured so far) — its averages are flagged throughout and should be read with caution.</li>
+  </ul>
+</section>
+
+<!-- ===================== 3 ===================== -->
+<section class="doc" id="tour">
+  <h2><span class="num">3</span>A two-minute tour of the screen</h2>
+  <p>Four areas, top to bottom:</p>
+  <table>
+    <tr><th>Area</th><th>What's there</th></tr>
+    <tr><td><b>Top bar</b></td><td>IFC logo (links home) · a <b>🌐 globe</b> that opens the installations map · an <b>ⓘ</b> that opens Methods &amp; definitions · a <b>🌙</b> light/dark toggle.</td></tr>
+    <tr><td><b>Filter bar</b></td><td>Region · Installation · Year · Metric · Site&nbsp;Type. Controls that don't apply to the current tab are dimmed (see <a href="#controls">§4</a>).</td></tr>
+    <tr><td><b>Two tabs</b></td><td><b>Plot Explorer</b> (one site in detail) and <b>Genetic Gain &amp; Summary</b> (across sites). The map opens over the page from the globe button.</td></tr>
+    <tr><td><b>ForestTask</b></td><td>A floating button (bottom-right) that opens the chat/report assistant.</td></tr>
+  </table>
+  <div class="callout tip"><b>First thing to try:</b> leave the defaults (INW · HOODOO · Year1 · Height · CORE),
+  glance at the Plot Explorer deployment card, then switch to <b>Genetic Gain &amp; Summary</b> and read the
+  Woods→Improved dumbbell. That's the whole story in two screens.</div>
+</section>
+
+<!-- ===================== 4 ===================== -->
+<section class="doc" id="controls">
+  <h2><span class="num">4</span>The filter bar — what each control drives</h2>
+  <p>The five filters are shared, but each tab only listens to the ones that make sense. Irrelevant controls
+  dim so you always know what's active.</p>
+  <table>
+    <tr><th>Control</th><th>Choices</th><th>Drives</th></tr>
+    <tr><td><b>Region</b></td><td>INW · K-S</td><td>Both tabs &amp; the map.</td></tr>
+    <tr><td><b>Installation</b></td><td>sites in the region</td><td><b>Plot Explorer only</b> (the single site shown). Dimmed on Summary.</td></tr>
+    <tr><td><b>Year</b></td><td>Year1 · Year2 · Year3</td><td>Both tabs.</td></tr>
+    <tr><td><b>Metric</b></td><td>Caliper · Height · Volume</td><td>Both tabs.</td></tr>
+    <tr><td><b>Site Type</b></td><td>ALL · CORE · TRANSFER</td><td><b>Summary only</b> (which family of sites to summarise). Dimmed on Explorer.</td></tr>
+  </table>
+  <div class="callout note"><b>Sticky choices:</b> Region, Year, Metric and Site&nbsp;Type are remembered between
+  visits, and the current view is encoded in the page URL — bookmark or share the link to reopen the exact same view.</div>
+</section>
+
+<!-- ===================== 5 ===================== -->
+<section class="doc" id="explorer">
+  <h2><span class="num">5</span>Plot Explorer — one installation, up close</h2>
+  <p class="lead">Answers: <b>"At this site, this year, on this metric — how did Improved do versus Woods Run,
+  and should we deploy?"</b></p>
+
+  <h3>5.1 The KPI row</h3>
+  <div class="kpis">
+    <div class="kpibox" style="border-top-color:var(--woods)"><div class="l">Woods Run mean</div><div class="v">e.g. 18.4</div><div class="s">n seedlots · n trees</div></div>
+    <div class="kpibox" style="border-top-color:var(--improved)"><div class="l">Improved mean</div><div class="v">e.g. 22.1</div><div class="s">n seedlots · n trees</div></div>
+    <div class="kpibox" style="border-top-color:var(--positive)"><div class="l">Realized gain</div><div class="v">+20.1%</div><div class="s">abs diff · Hedges g</div></div>
+    <div class="kpibox" style="border-top-color:var(--navy)"><div class="l">Significance</div><div class="v">**</div><div class="s">p = 0.004</div></div>
+  </div>
+  <p>The mean cards show the <b>sample size</b> (seedlots and trees) beneath them — that context is what makes a
+  significance star honest. "Realized gain" is coloured green when positive, red when negative.</p>
+
+  <h3>5.2 The deployment decision card</h3>
+  <p>Directly below the KPIs, a colour-coded verdict for <b>this installation across all years and metrics</b>:</p>
+  <p>
+    <span class="pill pos">Deploy</span> &nbsp;significant positive gain, acceptable survival &nbsp;·&nbsp;
+    <span class="pill gold">Deploy with caution</span> &nbsp;gains positive but unproven, or mortality high &nbsp;·&nbsp;
+    <span class="pill neg">Hold</span> &nbsp;significant negative gain, or mostly non-positive
+  </p>
+  <p>It is <b>deterministic, not the AI</b> — computed from the latest measured year of each metric plus the
+  mortality gap. It lists the evidence it used (per-metric gain, significance, mortality) so nothing is a black box,
+  and ends with a reminder to confirm with the full report before an operational call.</p>
+
+  <h3>5.3 The six per-plot growth maps</h3>
+  <p>Six heatmaps reconstruct the <b>field layout</b> of each plot — Woods Run plots 1–3, Improved plots 4–6 —
+  placing every tree by its planting position on the 10-wide monitored grid. Each cell is coloured by growth and
+  labelled with its seedlot; hover for replication, defect and management codes. All six share one colour scale so
+  Woods and Improved are directly comparable. (A layout reconstruction from planting order, not surveyed coordinates.)</p>
+
+  <h3>5.4 Tables &amp; the avg / max / min chart</h3>
+  <ul>
+    <li><b>Mean by plot</b> (Woods, Improved) — each seedlot's mean in each plot.</li>
+    <li><b>Avg / Max / Min by seedlot</b> — a marker at each seedlot's mean with whiskers to its plot range
+    (this is a <i>range</i>, not a confidence interval).</li>
+  </ul>
+  <div class="callout"><b>Growth means here exclude dead and replacement trees</b> — see <a href="#methods">§9.2</a>.
+  The heatmaps still show every planted position (including dead) because they are a spatial map.</div>
+</section>
+
+<!-- ===================== 6 ===================== -->
+<section class="doc" id="summary">
+  <h2><span class="num">6</span>Genetic Gain &amp; Summary — across all sites</h2>
+  <p class="lead">Answers: <b>"Across the sites in this region / year / metric, how big is the gain, where, how
+  certain, and at what survival cost?"</b> The tab is organised into four labelled sections.</p>
+
+  <h3 id="summary-gain">6.1 · Realized genetic gain</h3>
+  <p>A KPI row (number of installations, mean &amp; median gain, count of significant sites, and the gain-vs-productivity
+  relationship), then two charts:</p>
+  <ul>
+    <li><b>Woods Run → Improved dumbbell</b> — one row per site. A <span class="pill w">Woods</span> dot and an
+    <span class="pill i">Improved</span> dot joined by a connector: <span style="color:var(--positive)">green</span> when
+    gain is positive, <span style="color:var(--negative)">red</span> when negative. A <b>gold ring</b> on the Improved dot
+    marks statistical significance (p&lt;0.05). A <b>grey whisker</b> is the 95% confidence interval of the gain — when it
+    reaches back across the Woods dot, the gain is <i>not</i> significant.</li>
+    <li><b>Gain vs site productivity</b> — does gain depend on site quality? The x-axis is the Woods Run site mean
+    (a productivity proxy); the y-axis is <b>absolute</b> gain (Improved − Woods, in metric units). Gold points are
+    significant; a dashed line is the fitted regression with its r and p.</li>
+  </ul>
+  <div class="callout"><b>The FDR toggle.</b> Each site is tested separately, so across many sites a few can look
+  significant by chance. Tick <b>FDR-adjust</b> to apply Benjamini–Hochberg across the visible sites; stars, gold rings
+  and the "p" column then reflect multiplicity-controlled <b>q-values</b>. Exports follow the toggle (filename gets a
+  <code>_FDR</code> suffix).</div>
+
+  <h3 id="summary-detail">6.2 · Site-by-site detail</h3>
+  <ul>
+    <li><b>Site gain &amp; survival table</b> — per site: Woods &amp; Improved means, Gain % (coloured by sign), stars,
+    p (or q), and both mortality columns. Sortable and filterable.</li>
+    <li><b>Per-seedlot means &amp; mortality</b> — every seedlot in the view, with mean, standard error and mortality %.</li>
+    <li><b>Download buttons</b> export either table as CSV for the current filters.</li>
+  </ul>
+
+  <h3 id="summary-dist">6.3 · Distributions across seedlots &amp; sites</h3>
+  <ul>
+    <li><b>Seedlot means by site</b> (Woods, Improved) — grouped bars; each site keeps its colour across the two charts.</li>
+    <li><b>Distribution of tree growth by seedlot</b> — boxplots (box = IQR, whiskers 1.5×IQR, points = outliers), split by source.</li>
+    <li><b>Installation means ± SE</b> — horizontal bars ranking sites, Woods vs Improved with standard-error bars.</li>
+  </ul>
+
+  <h3 id="summary-surv">6.4 · Survival &amp; damage</h3>
+  <p>The trial's #1 member priority — establishment survival — lives here:</p>
+  <ul>
+    <li><b>Mortality by site</b> — share of trees coded dead/replaced, Woods vs Improved, per installation (lower is better).</li>
+    <li><b>Top damage agents by source</b> — the most common defect codes (browse, frost, herbicide, unhealthy…) as a
+    % of each source's trees.</li>
+  </ul>
+  <div class="callout note"><b>Read gain and survival together.</b> Improved stock often grows faster <i>and</i> dies a
+  little more; the deployment call weighs both.</div>
+</section>
+
+<!-- ===================== 7 ===================== -->
+<section class="doc" id="map">
+  <h2><span class="num">7</span>Installations map</h2>
+  <p>Open it with the <b>🌐 globe</b> in the top bar. A satellite map of all trial sites across INW and K-S; each pin is
+  coloured by the site's <b>average realized gain</b> (grey = a planned site with no measured data yet). Click a pin to
+  see its year-by-year gain mini-matrix, then <b>"View in Dashboard"</b> to jump straight into Plot Explorer for that site
+  and region.</p>
+</section>
+
+<!-- ===================== 8 ===================== -->
+<section class="doc" id="assistant">
+  <h2><span class="num">8</span>ForestTask — the report assistant</h2>
+  <p class="lead">A chat assistant (bottom-right) with two modes: quick answers, and full written reports — both grounded
+  <b>strictly</b> in the numbers the dashboard computes (it never invents figures).</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>💬 Quick questions</h4>
+      <p>Type a short question for an instant inline answer.</p>
+      <ul>
+        <li><i>"What's the gain at HOODOO in Year 2?"</i></li>
+        <li><i>"Mortality at SITKA?"</i></li>
+        <li><i>"Plot the gains"</i> → a quick chart inline.</li>
+      </ul>
+      <p style="font-size:13px;color:var(--muted)">Short look-ups use a fast model; analytical questions escalate automatically.</p>
+    </div>
+    <div class="card">
+      <h4>📄 Reports</h4>
+      <p>Start with the word <b>report</b> (or pick a suggestion chip). A panel opens on the right, plays a short build
+      animation, and produces a full document — charts, tables and written analysis — in ~1–2 minutes, then offers an
+      <b>HTML download</b>.</p>
+      <ul>
+        <li><i>"report on installation HOODOO"</i></li>
+        <li><i>"deployment report for CORE sites"</i></li>
+        <li><i>"report comparing INW vs K-S"</i></li>
+        <li><i>"report on seedlot 97-72 across INW"</i></li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>What a report contains</h3>
+  <p>The engine first computes the evidence deterministically (figures &amp; tables, including year-by-year
+  <b>trend charts</b>), then an LLM writes the narrative around those fixed numbers, a second pass critiques it against an
+  expert rubric, and a third revises it. Sections: Executive summary · Realized genetic gain · Site/installation detail ·
+  Seedlot detail · Plot-level &amp; spatial pattern · Survival &amp; defects · Key findings · Caveats &amp; recommendations —
+  followed by the computed Evidence, Deployment decision, Seedlot stability (G×E) and Damage &amp; risk sections.</p>
+  <div class="callout tip"><b>It understands scope.</b> Name any combination of region / installation / seedlot / year /
+  metric, ask for a comparison or a deployment decision, and it confines the report to exactly that. Mistyped a seedlot id?
+  It finds the closest real one and says so.</div>
+  <div class="callout note"><b>Offline?</b> If no model key is configured, ForestTask still produces a report from the
+  computed numbers using built-in templates — just without the polished prose.</div>
+</section>
+
+<!-- ===================== 9 ===================== -->
+<section class="doc" id="methods">
+  <h2><span class="num">9</span>Methods &amp; equations</h2>
+  <p>Every number in the dashboard comes from the formulas below. They're also summarised in-app under the <b>ⓘ Methods</b> button.</p>
+
+  <h3>9.1 Realized genetic gain</h3>
+  <p>For an installation × year × metric, with \(\mu_I\) the mean of <span class="pill i">Improved</span> seedlot means
+  and \(\mu_W\) the mean of <span class="pill w">Woods Run</span> seedlot means:</p>
+  <div class="eqn">$$\text{Gain}\,\%=100\times\frac{\mu_I-\mu_W}{\mu_W}\qquad\text{Gain}_{\text{abs}}=\mu_I-\mu_W$$</div>
+  <p>A positive value means improved stock grew faster (White, Adams &amp; Neale 2007; Zobel &amp; Talbert 1984).</p>
+
+  <h3 id="methods-cohort">9.2 The growth cohort — which trees count</h3>
+  <p>All growth means (and therefore gain) use the <b>surviving original cohort only</b>: trees coded <code>DEAD</code> or
+  <code>DEAD (REPLACEMENT)</code> are excluded. Interplanted replacements are a younger cohort, so including them would
+  confound genetic gain with planting age. <b>Mortality is analysed separately</b> and <i>does</i> count those trees.</p>
+
+  <h3>9.3 Unit of replication &amp; significance</h3>
+  <p>The independent unit is the <b>seedlot (genetic-entry) mean</b>, not the individual tree (plots are pseudo-replicates).
+  A <b>Welch two-sample t-test</b> on seedlot means gives the p-value:</p>
+  <div class="eqn">$$t=\frac{\mu_I-\mu_W}{\sqrt{\dfrac{s_I^2}{n_I}+\dfrac{s_W^2}{n_W}}},\qquad
+  \nu=\frac{\left(\dfrac{s_I^2}{n_I}+\dfrac{s_W^2}{n_W}\right)^2}{\dfrac{(s_I^2/n_I)^2}{n_I-1}+\dfrac{(s_W^2/n_W)^2}{n_W-1}}$$</div>
+  <p>with Satterthwaite degrees of freedom \(\nu\). Stars: <b>*</b> p&lt;0.05, <b>**</b> p&lt;0.01, <b>***</b> p&lt;0.001;
+  <b>ns</b> = not significant. A 95% confidence interval on the difference is</p>
+  <div class="eqn">$$(\mu_I-\mu_W)\;\pm\;t_{0.975,\nu}\sqrt{\tfrac{s_I^2}{n_I}+\tfrac{s_W^2}{n_W}}$$</div>
+
+  <h3>9.4 Effect size — Hedges g</h3>
+  <div class="eqn">$$g=\frac{\mu_I-\mu_W}{s_p}\,J,\quad s_p=\sqrt{\frac{(n_I-1)s_I^2+(n_W-1)s_W^2}{n_I+n_W-2}},\quad
+  J=1-\frac{3}{4(n_I+n_W)-9}$$</div>
+  <p>\(J\) is the small-sample bias correction. Roughly: |g| ≈ 0.2 small, 0.5 medium, 0.8 large.</p>
+
+  <h3>9.5 Multiple comparisons — Benjamini–Hochberg FDR</h3>
+  <p>With \(m\) sites tested, sort the p-values \(p_{(1)}\le\dots\le p_{(m)}\); the adjusted q-value is the
+  monotone step-up:</p>
+  <div class="eqn">$$q_{(i)}=\min_{k\ge i}\left\{\min\!\left(1,\;\frac{m}{k}\,p_{(k)}\right)\right\}$$</div>
+  <p>Enabling the FDR toggle controls the expected proportion of false "significant" calls across the visible family of sites.</p>
+
+  <h3>9.6 Gain vs site productivity</h3>
+  <p>An ordinary least-squares regression of <b>absolute</b> gain on the Woods Run site mean (a productivity proxy):</p>
+  <div class="eqn">$$\text{Gain}_{\text{abs}}=\beta_0+\beta_1\,\mu_W+\varepsilon$$</div>
+  <div class="callout warn"><b>Why absolute, not %.</b> Gain&nbsp;% has \(\mu_W\) in its denominator, so regressing it on
+  \(\mu_W\) manufactures a spurious negative slope. Absolute gain removes that coupling, so a negative slope here is a real
+  signal (gains larger on poorer sites — a classic G×E pattern).</div>
+
+  <h3>9.7 Mortality &amp; G×E</h3>
+  <div class="eqn">$$\text{Mortality}\,\%=100\times\frac{\#\{\text{DEAD}\}+\#\{\text{DEAD (REPLACEMENT)}\}}{\text{trees}}$$</div>
+  <p>Cross-site ranking concordance of seedlots (genotype × environment) is summarised in reports with <b>Kendall's W</b>
+  (0 = no agreement, 1 = identical rankings everywhere).</p>
+
+  <div class="callout note"><b>Screening tool.</b> These are robust screening statistics. For inference-grade conclusions,
+  follow up with a mixed-effects model (random site &amp; seedlot effects).</div>
+</section>
+
+<!-- ===================== 10 ===================== -->
+<section class="doc" id="reading">
+  <h2><span class="num">10</span>Reading every plot at a glance</h2>
+  <table>
+    <tr><th>Visual</th><th>How to read it</th></tr>
+    <tr><td><b>Gain dumbbell</b></td><td>Longer connector = bigger gain. Green = Improved ahead, red = behind. Gold ring = significant. Grey whisker crossing the Woods dot = not significant.</td></tr>
+    <tr><td><b>Gain vs productivity</b></td><td>Points high on the y-axis = bigger absolute gain. Dashed line slope: down-to-the-right = gains larger on poorer sites. Gold = significant sites.</td></tr>
+    <tr><td><b>Per-plot heatmap</b></td><td>Darker = more growth (shared scale across all 6). Columns/blocks = seedlots. Compare the colour of plots 1–3 (Woods) vs 4–6 (Improved).</td></tr>
+    <tr><td><b>Avg/Max/Min</b></td><td>Marker = seedlot mean; whisker = plot-to-plot range (not a CI).</td></tr>
+    <tr><td><b>Boxplot</b></td><td>Box = middle 50% of trees; line = median; points = outliers. Wider box = more variable seedlot.</td></tr>
+    <tr><td><b>Installation means ±SE</b></td><td>Bars ranked by Woods mean; error bars = standard error. Gap between the two bars ≈ gain.</td></tr>
+    <tr><td><b>Mortality by site</b></td><td>Shorter bars = better survival. Compare Woods vs Improved per site.</td></tr>
+    <tr><td><b>Damage agents</b></td><td>Tallest bars = most common problems; compare which source each agent hits harder.</td></tr>
+  </table>
+  <p class="legend" style="margin-top:14px;">
+    <span><span class="dot" style="background:var(--woods)"></span>Woods Run</span>
+    <span><span class="dot" style="background:var(--improved)"></span>Improved</span>
+    <span><span class="dot" style="background:var(--positive)"></span>Positive / good</span>
+    <span><span class="dot" style="background:var(--negative)"></span>Negative / concern</span>
+    <span><span class="dot" style="background:var(--gold)"></span>Significant</span>
+  </p>
+</section>
+
+<!-- ===================== 11 ===================== -->
+<section class="doc" id="recipes">
+  <h2><span class="num">11</span>How-to recipes</h2>
+
+  <h3>A · Should we deploy Improved at one site?</h3>
+  <ol class="steps">
+    <li>Open <b>Plot Explorer</b>; pick the Region and Installation.</li>
+    <li>Read the <b>deployment card</b> verdict and its per-metric evidence.</li>
+    <li>Scan the years (Year1→3) to check the gain holds up; glance at mortality in the KPIs.</li>
+    <li>For the written case, ask ForestTask: <i>"report on installation &lt;NAME&gt;"</i>.</li>
+  </ol>
+
+  <h3>B · Which sites show significant gain in volume, Year 2?</h3>
+  <ol class="steps">
+    <li>Go to <b>Genetic Gain &amp; Summary</b>; set Year = Year2, Metric = Volume, Site Type = CORE.</li>
+    <li>In the dumbbell, look for <b>gold rings</b>; confirm in the site table's stars / p column.</li>
+    <li>Worried about many tests? tick <b>FDR-adjust</b> and see which survive.</li>
+    <li>Click <b>Download gain table (CSV)</b> to keep the numbers.</li>
+  </ol>
+
+  <h3>C · Compare the two regions</h3>
+  <ol class="steps">
+    <li>Ask ForestTask: <i>"report comparing INW vs K-S"</i> (optionally name a metric).</li>
+    <li>The report includes region trend charts and a side-by-side gain summary.</li>
+  </ol>
+
+  <h3>D · Track a single seedlot</h3>
+  <ol class="steps">
+    <li>Ask ForestTask: <i>"report on seedlot 97-72 across INW sites"</i>.</li>
+    <li>You'll get its mean vs the source-group average, by site and year, plus stability.</li>
+  </ol>
+</section>
+
+<!-- ===================== 12 ===================== -->
+<section class="doc" id="setup">
+  <h2><span class="num">12</span>Setup &amp; construction (for hosts / developers)</h2>
+
+  <h3>Architecture</h3>
+  <p>A modular Dash app. Heavy lifting (86k rows → plot/seedlot/installation summaries + mortality) happens <b>once</b>
+  at startup in a cached <code>DataStore</code>; callbacks then slice cached frames.</p>
+  <table>
+    <tr><th>Module</th><th>Role</th></tr>
+    <tr><td><code>data.py</code></td><td>Loads &amp; validates the CSV once; pre-computes plot / seedlot / installation / mortality frames; growth frames exclude dead/replacement.</td></tr>
+    <tr><td><code>stats.py</code></td><td>Realized gain, Welch test + CI, Hedges g, Benjamini–Hochberg, productivity regression, deployment verdict, trial overview.</td></tr>
+    <tr><td><code>figures.py</code></td><td>Themed Plotly chart factories (heatmaps, dumbbell, scatter, boxplots, mortality, damage).</td></tr>
+    <tr><td><code>components.py</code></td><td>Styled tables, KPI cards, dropdowns.</td></tr>
+    <tr><td><code>layout.py</code></td><td>Page shell, filter bar, tabs, map pane, methods modal, ForestTask widget.</td></tr>
+    <tr><td><code>callbacks.py</code></td><td>All interactivity (filters, tabs, chat, reports, downloads, URL state).</td></tr>
+    <tr><td><code>report.py</code></td><td>The ForestTask report engine (parse → evidence → draft → critique → revise).</td></tr>
+    <tr><td><code>assistant.py</code></td><td>MindRouter (LLM) client and model routing.</td></tr>
+    <tr><td><code>map_builder.py</code></td><td>Builds the Leaflet installations map at startup.</td></tr>
+  </table>
+
+  <h3>Run it locally</h3>
+  <pre><span class="c"># from RGT_APP/</span>
+python -m venv venv
+venv\Scripts\activate            <span class="c">REM Windows (source venv/bin/activate on macOS/Linux)</span>
+pip install -r requirements.txt
+python app.py                    <span class="c"># dev server → http://127.0.0.1:8050</span>
+
+<span class="c"># production</span>
+gunicorn app:server -b 0.0.0.0:8050 -w 4 --timeout 300</pre>
+
+  <h3>Data file schema</h3>
+  <p>The app loads <code>data/rgt24_new.csv</code> (override with <code>RGT_DATA_FILE</code>). Required columns:</p>
+  <pre>Region, Installation, Source, Seedlot, PLOT, TREE,
+Replication, Year, Value, Metric, Management, Defect</pre>
+  <ul>
+    <li><code>Source</code> ∈ {<code>Woods run</code>, <code>Improved</code>}; <code>PLOT</code> 1–3 = Woods, 4–6 = Improved.</li>
+    <li><code>Management</code> carries <code>DEAD</code> / <code>DEAD (REPLACEMENT)</code> (drives mortality); <code>Defect</code> carries damage codes.</li>
+    <li><code>Metric</code> ∈ {<code>CALIPER GROWTH (MM)</code>, <code>HEIGHT GROWTH (CM)</code>, <code>VOLUME GROWTH (CM3)</code>}.</li>
+  </ul>
+
+  <h3>Configuration &amp; ops</h3>
+  <ul>
+    <li><code>MINDROUTER_API_KEY</code> in a git-ignored <code>.env</code> enables ForestTask. The app runs without it (assistant shows "offline").</li>
+    <li><code>RGT_URL_PREFIX=/dashapp/</code> when serving under a subpath (matches nginx).</li>
+    <li><b>Tests &amp; CI:</b> <code>python -m pytest -q</code> runs golden-value tests for the gain math; a GitHub Actions workflow byte-compiles and tests on every push.</li>
+  </ul>
+</section>
+
+<!-- ===================== 13 ===================== -->
+<section class="doc" id="caveats">
+  <h2><span class="num">13</span>Caveats &amp; good practice</h2>
+  <ul>
+    <li><b>It's a screening tool.</b> Confirm headline calls with a mixed-effects model before high-stakes decisions.</li>
+    <li><b>Year 3 is under-sampled</b> — few sites measured; treat its averages as provisional.</li>
+    <li><b>Non-significant ≠ no effect</b> — it means the data can't yet distinguish the gain from zero.</li>
+    <li><b>Multiplicity</b> — with many sites, use the FDR toggle before trusting a handful of lone stars.</li>
+    <li><b>Improved often dies a little more</b> — always weigh the survival panel against the growth gain.</li>
+    <li><b>Productivity proxy</b> — "site quality" is the Woods Run mean, a within-trial proxy, not an external climate index.</li>
+  </ul>
+</section>
+
+<!-- ===================== 14 ===================== -->
+<section class="doc" id="glossary">
+  <h2><span class="num">14</span>Glossary</h2>
+  <table>
+    <tr><th>Term</th><th>Meaning</th></tr>
+    <tr><td>Realized gain</td><td>Growth advantage of Improved over Woods Run, as a % of the Woods Run baseline.</td></tr>
+    <tr><td>Woods Run</td><td>Local unimproved seed — the operational baseline / check.</td></tr>
+    <tr><td>Improved</td><td>First-generation elite (genetically selected) seedlots.</td></tr>
+    <tr><td>Seedlot (genetic entry)</td><td>A single family/source; the unit of replication for significance.</td></tr>
+    <tr><td>CORE / TRANSFER</td><td>Home-seed-zone sites / off-zone climate-transfer sites.</td></tr>
+    <tr><td>CI (95%)</td><td>Range that should contain the true gain 95% of the time; the grey whisker.</td></tr>
+    <tr><td>p / q value</td><td>p = chance of seeing this gain if there were none; q = the same after FDR adjustment.</td></tr>
+    <tr><td>Hedges g</td><td>Standardised effect size (gain in standard-deviation units).</td></tr>
+    <tr><td>FDR</td><td>False Discovery Rate — Benjamini–Hochberg control across many tested sites.</td></tr>
+    <tr><td>G×E</td><td>Genotype × environment — whether a seedlot ranks consistently across sites.</td></tr>
+    <tr><td>Mortality</td><td>Share of trees coded dead or replaced.</td></tr>
+  </table>
+</section>
+
+<footer>
+  <b>Realized Genetic Gain Trials Dashboard</b> — Intermountain Forestry Cooperative, University of Idaho.
+  This manual documents dashboard v2. For definitions inside the app, use the <b>ⓘ Methods</b> button; for a written
+  analysis of any slice, ask <b>ForestTask</b>. A screening tool — confirm inference-grade conclusions with a mixed-effects model.
+</footer>
+
+</main>
+</div>
+</body>
+</html>

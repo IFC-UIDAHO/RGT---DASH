@@ -10,9 +10,11 @@ from __future__ import annotations
 
 import functools
 import json
+import logging
 import math
 import time
-import traceback
+import uuid
+from urllib.parse import urlencode, parse_qs
 
 import pandas as pd
 from dash import Input, Output, State, dcc, html, no_update
@@ -24,6 +26,8 @@ from . import components as C
 from .assistant import CLIENT, auto_model, build_messages
 from .config import Color
 from .layout import SUGGESTIONS, ASSISTANT_NAME
+
+logger = logging.getLogger("rgt.callbacks")
 
 GRAPH_CONFIG = {"displaylogo": False, "displayModeBar": "hover",
                 "modeBarButtonsToRemove": ["select2d", "lasso2d", "autoScale2d"],
@@ -41,14 +45,19 @@ def _gain_df(store, region, year, metric, inst_type):
     return _GAIN_CACHE[key]
 
 
-def _error_card(tb_text, where=""):
+def _error_card(err_id, where=""):
+    """User-facing error card. Shows a short reference id only -- the full
+    traceback is logged server-side, never rendered to the browser."""
+    where_txt = f" in {where}" if where else ""
     return html.Div([
-        html.Div(f"This panel hit an error{(' in ' + where) if where else ''}.",
+        html.Div(f"This panel couldn't load{where_txt}.",
                  style={"fontWeight": 700, "color": Color.NEGATIVE, "marginBottom": "6px"}),
-        html.Pre(tb_text, style={"whiteSpace": "pre-wrap", "fontSize": "11px",
-                 "color": Color.INK, "background": Color.SURFACE_ALT, "padding": "10px",
-                 "borderRadius": "8px", "maxHeight": "320px", "overflow": "auto",
-                 "border": f"1px solid {Color.BORDER}"}),
+        html.Div("Try a different Region, Year, or Metric. If it keeps happening, "
+                 "send this reference to the maintainer:",
+                 style={"fontSize": "12px", "color": Color.INK, "marginBottom": "8px"}),
+        html.Code(f"error {err_id}", style={
+            "fontSize": "12px", "background": Color.SURFACE_ALT, "padding": "3px 8px",
+            "borderRadius": "6px", "border": f"1px solid {Color.BORDER}", "color": Color.MUTED}),
     ], className="chart-card", style={"padding": "14px"})
 
 
@@ -61,7 +70,12 @@ def _safe(n_outputs, where=""):
             except PreventUpdate:
                 raise
             except Exception:
-                card = _error_card(traceback.format_exc(), where)
+                # Log the full traceback server-side under a short id; show the
+                # user only the id -- never the stack trace.
+                err_id = uuid.uuid4().hex[:8]
+                logger.exception("Panel error [%s]%s", err_id,
+                                 f" in {where}" if where else "")
+                card = _error_card(err_id, where)
                 if n_outputs == 1:
                     return card
                 return tuple([card] + [html.Div() for _ in range(n_outputs - 1)])
@@ -80,6 +94,33 @@ def _fmt(x, pct=False, plus=False):
     return s + ("%" if pct else "")
 
 
+# --------------------------------------------------------------------------- #
+# Shareable view state <-> URL query string
+# --------------------------------------------------------------------------- #
+def _state_to_search(region, installation, year, metric, inst_type, tab, fdr) -> str:
+    params = {}
+    if region:       params["region"] = region
+    if installation: params["inst"] = installation
+    if year:         params["year"] = year
+    if metric:       params["metric"] = metric
+    if inst_type:    params["type"] = inst_type
+    if tab:          params["tab"] = tab
+    if fdr and "fdr" in fdr:
+        params["fdr"] = "1"
+    return ("?" + urlencode(params)) if params else ""
+
+
+def _search_to_state(search):
+    q = parse_qs((search or "").lstrip("?"))
+
+    def g(k):
+        v = q.get(k)
+        return v[0] if v else None
+
+    fdr = ["fdr"] if g("fdr") == "1" else []
+    return g("region"), g("inst"), g("year"), g("metric"), g("type"), g("tab"), fdr
+
+
 # =========================================================================== #
 def register(app, store):
 
@@ -89,18 +130,62 @@ def register(app, store):
         Output("pane-summary",   "style"),
         Output("pane-map",       "style"),
         Output("insttype-wrap",  "style"),
+        Output("installation-wrap", "style"),
         Output("map-poll",       "disabled"),
         Input("tabs", "value"),
     )
     def _toggle(tab):
         hide = {"display": "none"}
+        # Dim (don't remove) controls that don't drive the active tab so their
+        # value survives a tab switch. Installation drives only Plot Explorer;
+        # Site Type drives only the Summary tab. The map is opened by the globe
+        # button in the topbar (tab == "map"), not a visible tab.
+        dim = {"opacity": 0.4, "pointerEvents": "none"}
         return (
             {} if tab == "explorer" else hide,
             {} if tab == "summary" else hide,
             {} if tab == "map"     else hide,
-            hide if tab in ("explorer", "map") else {},
-            tab != "map",   # enable poll only while Map tab is visible
+            {} if tab == "summary" else hide,   # Site Type
+            {} if tab == "explorer" else dim,   # Installation
+            tab != "map",   # enable the map poll only while the map is open
         )
+
+    # ---- Shareable links: keep the URL in sync with the view, and restore a
+    #      deep-linked view once at load. -----------------------------------=- #
+    @app.callback(
+        Output("url", "search"),
+        Input("dd-region", "value"), Input("dd-installation", "value"),
+        Input("dd-year", "value"), Input("dd-metric", "value"),
+        Input("dd-insttype", "value"), Input("tabs", "value"),
+        Input("fdr-toggle", "value"),
+        prevent_initial_call=True,
+    )
+    def _sync_url(region, installation, year, metric, inst_type, tab, fdr):
+        return _state_to_search(region, installation, year, metric, inst_type, tab, fdr)
+
+    @app.callback(
+        Output("dd-region", "value", allow_duplicate=True),
+        Output("dd-installation", "value", allow_duplicate=True),
+        Output("dd-year", "value", allow_duplicate=True),
+        Output("dd-metric", "value", allow_duplicate=True),
+        Output("dd-insttype", "value", allow_duplicate=True),
+        Output("tabs", "value", allow_duplicate=True),
+        Output("fdr-toggle", "value", allow_duplicate=True),
+        Input("boot", "n_intervals"),
+        State("url", "search"),
+        prevent_initial_call=True,
+    )
+    def _apply_url(_boot, search):
+        if not search:
+            raise PreventUpdate
+        region, inst, year, metric, itype, tab, fdr = _search_to_state(search)
+        if not any([region, inst, year, metric, itype, tab]):
+            raise PreventUpdate
+        if tab not in ("explorer", "summary", "map"):   # ignore stale/removed tabs
+            tab = None
+        # Missing params fall back to whatever the dropdowns already hold.
+        return (region or no_update, inst or no_update, year or no_update,
+                metric or no_update, itype or no_update, tab or no_update, fdr)
 
     # ---- clientside: poll window._rgt_selected (set by map iframe) --------- #
     app.clientside_callback(
@@ -161,6 +246,20 @@ def register(app, store):
         open_ = False if ctx.triggered_id == "assistant-close" else (not is_open)
         return ("forestask-popup open" if open_ else "forestask-popup closed",
                 {"display": "none"} if open_ else {})
+
+    # ---- Methods & definitions modal open/close ---------------------------- #
+    @app.callback(
+        Output("methods-modal", "className"),
+        Input("methods-btn", "n_clicks"),
+        Input("methods-close", "n_clicks"),
+        State("methods-modal", "className"),
+        prevent_initial_call=True,
+    )
+    def _toggle_methods(_open, _close, cls):
+        from dash import callback_context as ctx
+        is_open = "open" in (cls or "")
+        open_ = False if ctx.triggered_id == "methods-close" else (not is_open)
+        return "methods-modal open" if open_ else "methods-modal closed"
 
     # ---- dependent installation dropdown ---------------------------------- #
     @app.callback(
@@ -257,6 +356,19 @@ def register(app, store):
         ]
         return kpis, plots, tables
 
+    # ---- Deployment decision (per installation, across years & metrics) ---- #
+    @app.callback(
+        Output("exp-deploy", "children"),
+        Input("dd-region", "value"),
+        Input("dd-installation", "value"),
+    )
+    @_safe(1, "Deployment call")
+    def _deploy(region, installation):
+        if not region or not installation:
+            raise PreventUpdate
+        dc = stats.deployment_call(store, region=region, installation=installation)
+        return _deploy_card(dc)
+
     # ====================================================================== #
     # SUMMARY & GENETIC GAIN
     # ====================================================================== #
@@ -268,18 +380,24 @@ def register(app, store):
         Output("sum-bars", "children"),
         Output("sum-box-card", "children"),
         Output("sum-instcompare-card", "children"),
+        Output("sum-mort-card", "children"),
+        Output("sum-damage-card", "children"),
         Input("boot", "n_intervals"),
         Input("dd-region", "value"),
         Input("dd-year", "value"),
         Input("dd-metric", "value"),
         Input("dd-insttype", "value"),
+        Input("fdr-toggle", "value"),
     )
-    @_safe(7, "Genetic Gain & Summary")
-    def _summary(_boot, region, year, metric, inst_type):
+    @_safe(9, "Genetic Gain & Summary")
+    def _summary(_boot, region, year, metric, inst_type, fdr):
         if not all([region, year, metric, inst_type]):
             raise PreventUpdate
 
         gdf = _gain_df(store, region, year, metric, inst_type)
+        fdr_on = bool(fdr and "fdr" in fdr)
+        if fdr_on:                       # multiplicity-controlled significance
+            gdf = stats.apply_fdr(gdf)
         rel = stats.productivity_relationship(gdf)
         unit = config.METRICS.get(metric, {}).get("unit", "")
 
@@ -287,8 +405,10 @@ def register(app, store):
             empty = _graph(F.empty_fig("No installations with data for this filter", 380), 380)
             kpis = [C.kpi("Sites", "0", f"{region} · {year}", Color.NEUTRAL)]
             blank = C.chart_card("--", empty)
-            return kpis, blank, C.chart_card("--", empty), html.Div(), \
-                [html.Div(), html.Div()], C.chart_card("--", empty), C.chart_card("--", empty)
+            return (kpis, blank, C.chart_card("--", empty), html.Div(),
+                    [html.Div(), html.Div()], C.chart_card("--", empty),
+                    C.chart_card("--", empty), C.chart_card("--", empty),
+                    C.chart_card("--", empty))
 
         valid = gdf["gain_pct"].dropna()
         mean_gain = valid.mean() if not valid.empty else float("nan")
@@ -300,7 +420,8 @@ def register(app, store):
             C.kpi("Mean realized gain", _fmt(mean_gain, pct=True, plus=True),
                   f"median {_fmt(valid.median() if not valid.empty else None, pct=True, plus=True)}",
                   Color.POSITIVE if (mean_gain or 0) >= 0 else Color.NEGATIVE),
-            C.kpi("Significant sites", f"{n_sig} / {len(gdf)}", "p < 0.05 (Welch)", Color.GOLD),
+            C.kpi("Significant sites", f"{n_sig} / {len(gdf)}",
+                  "q < 0.05 (BH-FDR)" if fdr_on else "p < 0.05 (Welch)", Color.GOLD_INK),
             C.kpi("Gain vs productivity", rtxt,
                   "negative => gain falls on better sites" if rel.get("slope", 0) < 0
                   else "positive => gain rises on better sites", Color.NAVY),
@@ -311,24 +432,31 @@ def register(app, store):
             f"Woods Run → Improved by site -- {config.METRICS.get(metric, {}).get('short','')} ({year})",
             _graph(F.gain_dumbbell(gdf, metric=metric, height=gh), gh),
             info="Each line pairs a site's Woods Run and Improved means. "
-                 "Green = positive realized gain, red = negative, gold ring = significant (p<0.05).")
+                 "Green = positive realized gain, red = negative, gold ring = significant (p<0.05). "
+                 "Grey whisker = 95% CI of the gain; if it reaches back across the Woods Run dot, "
+                 "the gain isn't significant.")
         prod_card = C.chart_card(
             "Genetic gain vs site productivity",
             _graph(F.gain_vs_productivity(gdf, rel, metric=metric, height=420), 420),
-            info="Does realized gain change with site quality (Woods Run mean)?")
+            info="Does realized gain change with site quality? Y-axis is absolute gain "
+                 "(Improved − Woods Run), which avoids the denominator bias of regressing "
+                 "gain % on the Woods Run mean.")
 
         disp = gdf[["installation", "inst_type", "woods_mean", "improved_mean",
                     "gain_pct", "stars", "p_value", "woods_mortality", "improved_mortality"]].copy()
+        pcol = "q (FDR)" if fdr_on else "p"
         disp.columns = ["Installation", "Type", f"Woods ({unit})", f"Improved ({unit})",
-                        "Gain %", "Sig.", "p", "Woods mort.%", "Imp. mort.%"]
-        disp["p"] = disp["p"].apply(lambda v: "--" if pd.isna(v) else f"{v:.3f}")
+                        "Gain %", "Sig.", pcol, "Woods mort.%", "Imp. mort.%"]
+        disp[pcol] = disp[pcol].apply(lambda v: "--" if pd.isna(v) else f"{v:.3f}")
         gain_table = C.chart_card(
             "Site-by-site genetic gain & survival",
             C.data_table(disp, table_id="tbl-summary", height="300px",
                          numeric_cols=[f"Woods ({unit})", f"Improved ({unit})", "Gain %",
                                        "Woods mort.%", "Imp. mort.%"],
                          gain_col="Gain %", filter_=True),
-            info="Realized gain plus survival per site. Gain % is coloured by sign.")
+            info="Realized gain plus survival per site. Gain % is coloured by sign. "
+                 "Growth means use surviving trees only (dead/replacement excluded); "
+                 "mortality counts them.")
 
         sl = store.seedlots(region=region, year=year, metric=metric, inst_type=inst_type)
         sl = sl[["Installation", "Source", "Seedlot", "Average", "Standard error",
@@ -358,7 +486,8 @@ def register(app, store):
                                 metric=metric, height=360), 360)),
         ]
 
-        trees_all = store.trees(region=region, year=year, metric=metric, inst_type=inst_type)
+        trees_all = store.trees(region=region, year=year, metric=metric,
+                                inst_type=inst_type, living_only=True)
         box_card = C.chart_card("Distribution of tree growth by seedlot",
                                 _graph(F.seedlot_box(trees_all, metric=metric, height=420), 420),
                                 info="Box = IQR, whiskers 1.5xIQR, points = outliers")
@@ -367,7 +496,20 @@ def register(app, store):
         comp_card = C.chart_card("Installation means -- Woods Run vs Improved (+-SE)",
                                  _graph(F.installation_comparison(inst_df, metric=metric,
                                         height=420), 420))
-        return kpis, gain_card, prod_card, table_card, bars, box_card, comp_card
+
+        # Survival & damage -- ALL trees (incl. dead) so each tree counts once.
+        surv = store.trees(region=region, year=year, metric=metric, inst_type=inst_type)
+        mort_card = C.chart_card(
+            "Mortality by site -- Woods Run vs Improved",
+            _graph(F.mortality_by_site(surv, height=440), 440),
+            info="Share of trees coded dead / replaced, per installation. Lower is better.")
+        damage_card = C.chart_card(
+            "Top damage agents by source",
+            _graph(F.damage_agents(surv, height=440), 440),
+            info="Most common defect codes as a % of each source's trees "
+                 "(browse, frost, herbicide, unhealthy, etc.).")
+        return (kpis, gain_card, prod_card, table_card, bars, box_card, comp_card,
+                mort_card, damage_card)
 
     # ---- CSV export -------------------------------------------------------- #
     @app.callback(
@@ -375,13 +517,18 @@ def register(app, store):
         Input("dl-gain-btn", "n_clicks"),
         State("dd-region", "value"), State("dd-year", "value"),
         State("dd-metric", "value"), State("dd-insttype", "value"),
+        State("fdr-toggle", "value"),
         prevent_initial_call=True,
     )
-    def _download(n, region, year, metric, inst_type):
+    def _download(n, region, year, metric, inst_type, fdr):
         if not n:
             raise PreventUpdate
         gdf = _gain_df(store, region, year, metric, inst_type)
-        fname = f"rgt_gain_{region}_{year}_{config.METRICS.get(metric,{}).get('short','metric')}_{inst_type}.csv"
+        fdr_on = bool(fdr and "fdr" in fdr)
+        if fdr_on:                       # export matches the on-screen FDR view (adds p_raw + q)
+            gdf = stats.apply_fdr(gdf)
+        tag = "_FDR" if fdr_on else ""
+        fname = f"rgt_gain_{region}_{year}_{config.METRICS.get(metric,{}).get('short','metric')}_{inst_type}{tag}.csv"
         return dcc.send_data_frame(gdf.to_csv, fname.replace(" ", ""), index=False)
 
     # ---- per-seedlot table download --------------------------------------- #
@@ -416,6 +563,29 @@ def register(app, store):
         Output("chat-input", "value", allow_duplicate=True),
         Input("chat-send", "n_clicks"),
         State("chat-input", "value"),
+        prevent_initial_call=True,
+    )
+
+    # Pending area: show the user's bubble + typing dots the instant a message is
+    # sent (chat-outbox changes), then clear them when the reply lands (chat-log
+    # children change). Two tiny clientside callbacks -- no DOM manipulation.
+    app.clientside_callback(
+        "function(outbox){"
+        "  var no = window.dash_clientside.no_update;"
+        "  if(!outbox || !outbox.t || !outbox.t.trim()) return [no, no, no];"
+        "  var show = {display: 'flex'};"
+        "  return [outbox.t, show, show]; }",
+        Output("pending-user-bubble", "children"),
+        Output("pending-user", "style"),
+        Output("pending-typing", "style"),
+        Input("chat-outbox", "data"),
+        prevent_initial_call=True,
+    )
+    app.clientside_callback(
+        "function(_children){ var hide = {display: 'none'}; return [hide, hide]; }",
+        Output("pending-user", "style", allow_duplicate=True),
+        Output("pending-typing", "style", allow_duplicate=True),
+        Input("chat-log", "children"),
         prevent_initial_call=True,
     )
 
@@ -539,32 +709,11 @@ def register(app, store):
     def _report_close(n):
         return "report-overlay closed"
 
-    # ---- Skip button appears once the report is ready ---------------------- #
-    @app.callback(
-        Output("report-skip", "style"),
-        Input("report-html", "data"),
-        Input("pending-report", "data"),
-        prevent_initial_call=True,
-    )
-    def _skip_visibility(report_html, pending):
-        from dash import callback_context as ctx
-        if ctx.triggered_id == "report-html" and report_html:
-            return {"display": "inline-flex"}
-        return {"display": "none"}      # a new report just started -> hide again
-
-    # ---- Skip / auto-reveal: drop the film overlay, show the report -------- #
-    @app.callback(
-        Output("report-view", "className", allow_duplicate=True),
-        Input("report-skip", "n_clicks"),
-        prevent_initial_call=True,
-    )
-    def _reveal_report(n):
-        if not n:
-            raise PreventUpdate
-        return "report-overlay open revealed"
-
-    # ---- AUTO-reveal: the moment the report is built, swap from film to report
-    #      (robust fallback independent of the film's Skip / postMessage). ----- #
+    # ---- SINGLE reveal path: the instant the report is built (report-html is
+    #      set), drop the film overlay and show the report. This one callback is
+    #      now the ONLY reveal mechanism -- the old film postMessage handshake,
+    #      the Skip button, loadbridge.js and the theme.js listener were
+    #      redundant routes to the same outcome and have been removed. --------- #
     @app.callback(
         Output("report-view", "className", allow_duplicate=True),
         Input("report-html", "data"),
@@ -574,28 +723,6 @@ def register(app, store):
         if not report_html:
             raise PreventUpdate
         return "report-overlay open revealed"
-
-    # ---- tell the loading film the report is ready (it finishes its cycle,
-    #      shows a "ready" hint, then posts rgt-reveal back to reveal it) ----- #
-    app.clientside_callback(
-        """
-        function(data){
-            try{
-                if(data){
-                    var send = function(){
-                        var f = document.querySelector('#report-loading iframe');
-                        if(f && f.contentWindow){ f.contentWindow.postMessage({type:'rgt-ready'}, '*'); }
-                    };
-                    send(); setTimeout(send, 800); setTimeout(send, 2200);
-                }
-            }catch(e){}
-            return window.dash_clientside.no_update;
-        }
-        """,
-        Output("film-ready-bridge", "data"),
-        Input("report-html", "data"),
-        prevent_initial_call=True,
-    )
 
 
 # --------------------------------------------------------------------------- #
@@ -640,7 +767,8 @@ def _build_chart(store, prompt, region, year, metric, inst_type):
         fig = F.gain_vs_productivity(gdf, rel, metric=metric, height=320)
         cap = f"**Gain vs site productivity** -- {tag}."
     elif "box" in p or "distribution" in p or "spread" in p:
-        trees = store.trees(region=region, year=year, metric=metric, inst_type=inst_type)
+        trees = store.trees(region=region, year=year, metric=metric,
+                            inst_type=inst_type, living_only=True)
         fig = F.seedlot_box(trees, metric=metric, height=320)
         cap = f"**Tree-growth distribution by seedlot** -- {tag}."
     else:
@@ -664,6 +792,36 @@ def _mean_table(plot_df_source):
     cols = ["Seedlot"] + plot_cols + (["Overall Avg"] if "Overall Avg" in plot_df_source else [])
     d = plot_df_source[cols].sort_values("Seedlot")
     return C.data_table(d, height="300px", numeric_cols=plot_cols + ["Overall Avg"])
+
+
+_DEPLOY_COLORS = {"deploy": Color.POSITIVE, "caution": Color.GOLD_INK,
+                  "hold": Color.NEGATIVE, "none": Color.NEUTRAL}
+
+
+def _deploy_card(dc):
+    """Render the deployment verdict + the evidence it rests on."""
+    color = _DEPLOY_COLORS.get(dc["level"], Color.NEUTRAL)
+    items = []
+    for d in dc["per_metric"]:
+        sig = d["stars"] if d["stars"] and d["stars"] != "ns" else "n.s."
+        gain_col = Color.POSITIVE if d["gain_pct"] >= 0 else Color.NEGATIVE
+        parts = [f"{d['short']} ({d['year']}): ",
+                 html.B(f"{d['gain_pct']:+.1f}%", style={"color": gain_col}),
+                 f"  [{sig}]"]
+        if d["improved_mort"] is not None and d["woods_mort"] is not None:
+            parts.append(f"  ·  mortality {d['improved_mort']:.0f}% Improved vs "
+                         f"{d['woods_mort']:.0f}% Woods")
+        items.append(html.Li(parts))
+    return html.Div([
+        html.Div([
+            html.Span(dc["verdict"], className="deploy-badge", style={"background": color}),
+            html.Span(dc["headline"], className="deploy-headline"),
+        ], className="deploy-head"),
+        html.Ul(items, className="deploy-evidence") if items else html.Div(),
+        html.Div("Based on the latest measured year of each metric. A screening signal — confirm "
+                 "with the full report (trend, G×E, damage) before an operational call.",
+                 className="deploy-foot"),
+    ], className="deploy-card", style={"borderLeft": f"5px solid {color}"})
 
 
 def _render_chat(history):

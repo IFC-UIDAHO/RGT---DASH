@@ -115,6 +115,12 @@ class DataStore:
 
     def __post_init__(self):
         df = self.df
+        # Growth analyses use the surviving ORIGINAL cohort only: trees coded
+        # dead or replaced (IsDead) are excluded from every growth mean / SE /
+        # gain calc, because interplanted replacements are a younger cohort and
+        # would confound realized genetic gain with planting age. Mortality
+        # (below) still counts them. See README "Statistics methodology".
+        growth = df[~df["IsDead"]]
         self.inst_type_map = (
             df[["Region", "Installation", "InstallationType"]].drop_duplicates()
         )
@@ -131,7 +137,8 @@ class DataStore:
         }
 
         # --- plot-level pivots (per source, then stacked) -------------------
-        pivots = [_plot_pivot(df[df["Source"] == s]) for s in
+        # growth-only: dead/replacement trees excluded (see note above)
+        pivots = [_plot_pivot(growth[growth["Source"] == s]) for s in
                   (config.SOURCE_WOODS, config.SOURCE_IMPROVED)]
         self.plot_table = (
             pd.concat([p for p in pivots if not p.empty], ignore_index=True)
@@ -147,7 +154,9 @@ class DataStore:
         self.mortality_table = mort
 
         # --- seedlot-level mean / sem + mortality ---------------------------
-        seedlot = (df.groupby(["Year", "Region", "Installation", "Source", "Seedlot", "Metric"],
+        # Average/SE/n computed on the growth (living) cohort; Mortality % is
+        # merged from the full-frame mort table below.
+        seedlot = (growth.groupby(["Year", "Region", "Installation", "Source", "Seedlot", "Metric"],
                               observed=True)
                      .agg(Average=("Value", "mean"),
                           **{"Standard error": ("Value", "sem")},
@@ -162,7 +171,8 @@ class DataStore:
         self.seedlot_table = seedlot
 
         # --- installation-level mean / sem ----------------------------------
-        inst = (df.groupby(["Year", "Region", "Installation", "Source", "Metric"],
+        # growth-only cohort (dead/replacement excluded)
+        inst = (growth.groupby(["Year", "Region", "Installation", "Source", "Metric"],
                            observed=True)
                   .agg(Average=("Value", "mean"),
                        se=("Value", "sem"),
@@ -197,8 +207,14 @@ class DataStore:
     # Slicers used by callbacks
     # ------------------------------------------------------------------ #
     def trees(self, *, region=None, installation=None, year=None, metric=None,
-              source=None, plot=None, inst_type=None) -> pd.DataFrame:
-        """Filtered view of the raw tree-level frame."""
+              source=None, plot=None, inst_type=None, living_only=False) -> pd.DataFrame:
+        """Filtered view of the raw tree-level frame.
+
+        living_only=True drops trees coded dead/replacement (IsDead) -- use it
+        for growth statistics so realized gain reflects the surviving original
+        cohort. Leave False for the field-map heatmap and mortality, which need
+        every planted position.
+        """
         d = self.df
         mask = pd.Series(True, index=d.index)
         if region:        mask &= d["Region"] == region
@@ -209,6 +225,8 @@ class DataStore:
         if plot is not None: mask &= d["PLOT"] == plot
         if inst_type and inst_type != "ALL":
             mask &= d["InstallationType"] == inst_type
+        if living_only:
+            mask &= ~d["IsDead"]
         return d[mask]
 
     @staticmethod

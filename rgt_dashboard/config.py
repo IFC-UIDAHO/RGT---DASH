@@ -54,13 +54,21 @@ SOURCE_IMPROVED = "Improved"
 PLOT_SOURCE_MAP = {1: SOURCE_WOODS, 2: SOURCE_WOODS, 3: SOURCE_WOODS,
                    4: SOURCE_IMPROVED, 5: SOURCE_IMPROVED, 6: SOURCE_IMPROVED}
 
+# The monitored field grid is 10×10 (100 trees) by design (an inner 10×10 of a
+# 12×12 planting, the outer ring being a buffer). The heatmap snaps to this width
+# for plots near 100 trees instead of guessing from sqrt(n).
+PLOT_GRID_WIDTH = 10
+
 TRANSFER_INSTALLATIONS = ("CARSCALLEN TRANSFER", "SHERRY TRANSFER", "SITKA TRAN")
 DEAD_CODES = ("DEAD", "DEAD (REPLACEMENT)")
 
 METRICS = {
-    "CALIPER GROWTH (MM)": {"short": "Caliper", "unit": "mm", "axis": "Caliper growth (mm)"},
-    "HEIGHT GROWTH (CM)":  {"short": "Height",  "unit": "cm", "axis": "Height growth (cm)"},
-    "VOLUME GROWTH (CM3)": {"short": "Volume",  "unit": "cm3", "axis": "Volume growth (cm3)"},
+    "CALIPER GROWTH (MM)": {"short": "Caliper", "unit": "mm",  "axis": "Caliper growth (mm)",
+                            "label": "Caliper growth (mm)"},
+    "HEIGHT GROWTH (CM)":  {"short": "Height",  "unit": "cm",  "axis": "Height growth (cm)",
+                            "label": "Height growth (cm)"},
+    "VOLUME GROWTH (CM3)": {"short": "Volume",  "unit": "cm³", "axis": "Volume growth (cm³)",
+                            "label": "Volume growth (cm³)"},
 }
 
 DEFAULT_REGION = "INW"
@@ -76,6 +84,8 @@ class Color:
     NAVY_DARK = "#0f3257"
     GOLD = "#DBA800"
     GOLD_SOFT = "#F2C94C"
+    GOLD_INK = "#8A6D00"   # AA-compliant gold for TEXT on light surfaces (4.9:1); plain GOLD is only 2.2:1
+
     WOODS = "#2F6E8F"
     WOODS_SOFT = "#8FBCD4"
     IMPROVED = "#E08A1E"

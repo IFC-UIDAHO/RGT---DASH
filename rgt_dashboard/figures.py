@@ -16,6 +16,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from . import config
+from . import transfer_layout
 from .config import Color
 
 
@@ -73,18 +74,31 @@ def source_color(source: str) -> str:
 # 1. Per-plot growth heatmap  (replaces 6 copy-pasted blocks)
 # --------------------------------------------------------------------------- #
 def heatmap(trees_one_plot: pd.DataFrame, *, zmin=None, zmax=None, height=300) -> go.Figure:
-    """EXACT physical field map of a plot. Trees are placed in their real planting
-    positions: the TREE order is a serpentine (row-major boustrophedon) walk —
-    verified 100%% against the installation design diagrams — so normal sites show
-    clean seedlot columns and transfer sites show their true irregular seedlot
-    blocks. Cells are coloured by growth and labelled with the seedlot, so the
-    real layout is unmistakable; replication / defect / management are in the hover."""
+    """Per-plot growth grid.
+
+    CORE plots are a true field map: the TREE index runs as a serpentine
+    (row-major boustrophedon) walk across the 10-wide monitored grid -- rep 1 of
+    each of the 10 seedlots along row 0, rep 2 reversed along row 1, and so on,
+    which matches the trial's TREE numbering -- so cells sit in their real
+    planting positions. Cells are coloured by growth and labelled with the
+    seedlot; replication / defect / management are in the hover.
+
+    TRANSFER plots store trees grouped by seedlot with no field-position column in
+    the dataset, so each tree is placed at its real (row, col) from the IFC Plot
+    Design workbook (``transfer_layout.POSITIONS``) -- making the transfer field
+    map match the PLOT1-6 design diagrams exactly."""
     d = trees_one_plot
     if d is None or d.empty or d["Value"].notna().sum() == 0:
         return empty_fig("No measurements in this plot", height=height)
+    if "InstallationType" in d.columns and str(d["InstallationType"].iloc[0]) == "TRANSFER":
+        return _transfer_field_map(d, zmin=zmin, zmax=zmax, height=height)
     d = d.dropna(subset=["TREE"]).sort_values("TREE")
     n = len(d)
-    W = max(1, int(round(np.sqrt(n))))
+    # The monitored grid is config.PLOT_GRID_WIDTH wide (10×10 = 100 by design).
+    # Snap to it when the count is consistent with that layout; fall back to a
+    # square-ish reconstruction only for off-nominal / irregular plots.
+    gw = getattr(config, "PLOT_GRID_WIDTH", 10)
+    W = gw if abs(n - gw * gw) <= 25 else max(1, int(round(np.sqrt(n))))
     rows = int(np.ceil(n / W))
     vals = pd.to_numeric(d["Value"], errors="coerce").to_numpy(dtype=float)
     seeds = d["Seedlot"].astype(str).to_numpy()
@@ -117,6 +131,67 @@ def heatmap(trees_one_plot: pd.DataFrame, *, zmin=None, zmax=None, height=300) -
     fig.update_xaxes(showticklabels=False, title=None, type="category")
     fig.update_yaxes(autorange="reversed", showticklabels=False, title=None, type="category")
     return _theme(fig, height=height, legend=False, margin=dict(l=6, r=6, t=8, b=6))
+
+
+def _transfer_field_map(d: pd.DataFrame, *, zmin=None, zmax=None, height=300) -> go.Figure:
+    """Exact TRANSFER field map. Each tree is placed at its real (row, col) from
+    the Plot Design workbook (transfer_layout.POSITIONS), so the layout matches the
+    PLOT1-6 design diagrams. The few data trees whose replication has no design
+    cell (e.g. an extra R17/R18) drop into an empty cell of the same seedlot."""
+    d = d.dropna(subset=["Value"]).copy()
+    if d.empty:
+        return empty_fig("No measurements in this plot", height=height)
+    d["Seedlot"] = d["Seedlot"].astype(str)
+    d["_rep"] = d["Replication"].map(lambda r: _rep_sort_key(r)[0])
+    R, Cc = transfer_layout.GRID_ROWS, transfer_layout.GRID_COLS
+    Z = np.full((R, Cc), np.nan)
+    S = np.full((R, Cc), "", dtype=object)
+    RP = np.full((R, Cc), "", dtype=object)
+    DF = np.full((R, Cc), "", dtype=object)
+    MG = np.full((R, Cc), "", dtype=object)
+
+    plot_seedlots = set(d["Seedlot"])
+    seedlot_cells = {}                      # cells this plot's seedlots own
+    for (sl, _rp), pos in transfer_layout.POSITIONS.items():
+        if sl in plot_seedlots:
+            seedlot_cells.setdefault(sl, []).append(pos)
+    used = set()
+
+    def _place(pos, row):
+        r, c = pos
+        Z[r, c] = row["Value"]; S[r, c] = str(row["Seedlot"]); RP[r, c] = str(row["Replication"])
+        DF[r, c] = str(row.get("Defect") or ""); MG[r, c] = str(row.get("Management") or "")
+        used.add(pos)
+
+    leftover = []
+    for _, row in d.iterrows():
+        pos = transfer_layout.POSITIONS.get((row["Seedlot"], row["_rep"]))
+        if pos is not None and pos not in used:
+            _place(pos, row)
+        else:
+            leftover.append(row)
+    for row in leftover:                    # same-seedlot empty cell, else any empty
+        cells = [p for p in seedlot_cells.get(row["Seedlot"], []) if p not in used]
+        if not cells:
+            cells = [(r, c) for r in range(R) for c in range(Cc) if (r, c) not in used]
+        if cells:
+            _place(cells[0], row)
+
+    customdata = np.dstack([S, RP, DF, MG])
+    fig = go.Figure(go.Heatmap(
+        z=Z, x=list(range(1, Cc + 1)), y=list(range(1, R + 1)),
+        zmin=zmin, zmax=zmax, colorscale=config.HEATMAP_COLORSCALE,
+        xgap=1, ygap=1, hoverongaps=False,
+        text=S, texttemplate="%{text}", textfont=dict(size=7.5, color=Color.INK),
+        customdata=customdata,
+        colorbar=dict(thickness=9, len=0.85, outlinewidth=0, tickfont=dict(size=9)),
+        hovertemplate=("Seedlot %{customdata[0]} · %{customdata[1]}<br>Value: %{z:.1f}"
+                       "<br>Defect: %{customdata[2]}<br>Mgmt: %{customdata[3]}<extra></extra>"),
+    ))
+    fig.update_xaxes(showticklabels=False, title=None, type="category")
+    fig.update_yaxes(autorange="reversed", showticklabels=False, title=None, type="category")
+    return _theme(fig, height=height, legend=False, margin=dict(l=6, r=6, t=8, b=6))
+
 
 def avg_max_min(com_df: pd.DataFrame, *, metric=None, height=340) -> go.Figure:
     if com_df is None or com_df.empty:
@@ -258,7 +333,9 @@ def gain_chart(gain_df: pd.DataFrame, *, metric=None, height=420) -> go.Figure:
 def gain_dumbbell(gain_df: pd.DataFrame, *, metric=None, height=460) -> go.Figure:
     """Paired Woods Run -> Improved means per site. The connector shows the
     direction and size of realized gain (green = positive, red = negative);
-    significant sites (p<0.05) get a gold ring on the Improved dot."""
+    significant sites (p<0.05) get a gold ring on the Improved dot. A grey
+    horizontal whisker on the Improved dot is the 95% CI of the gain -- when it
+    reaches back across the Woods Run dot, the gain is not significant."""
     if gain_df is None or gain_df.empty:
         return empty_fig("No gain estimates for this selection", height=height)
     d = gain_df.dropna(subset=["woods_mean", "improved_mean", "gain_pct"]).copy()
@@ -274,8 +351,21 @@ def gain_dumbbell(gain_df: pd.DataFrame, *, metric=None, height=460) -> go.Figur
     stars = (d["stars"].fillna("").astype(str).tolist() if "stars" in d.columns else [""] * n)
     sig   = (list(d["significant"]) if "significant" in d.columns else [g >= 0 for g in gains])
 
-    xr = max(max(woods), max(imp))
-    xl = min(min(woods), min(imp))
+    # 95% CI on the gain (the Improved - Woods difference) -> a horizontal error
+    # bar on the Improved dot. The CI maps to [woods + diff_lo, woods + diff_hi]
+    # in x-units; arms are measured from the Improved dot. NaN CI (small samples)
+    # yields a zero-length arm (no whisker drawn).
+    dlo = [(float(v) if pd.notna(v) else None)
+           for v in (d["diff_lo"] if "diff_lo" in d.columns else [float("nan")] * n)]
+    dhi = [(float(v) if pd.notna(v) else None)
+           for v in (d["diff_hi"] if "diff_hi" in d.columns else [float("nan")] * n)]
+    err_plus  = [max(0.0, dhi[i] - (imp[i] - woods[i])) if dhi[i] is not None else 0.0 for i in range(n)]
+    err_minus = [max(0.0, (imp[i] - woods[i]) - dlo[i]) if dlo[i] is not None else 0.0 for i in range(n)]
+    ci_right  = [woods[i] + dhi[i] for i in range(n) if dhi[i] is not None]
+    ci_left   = [woods[i] + dlo[i] for i in range(n) if dlo[i] is not None]
+
+    xr = max([max(woods), max(imp)] + ci_right)
+    xl = min([min(woods), min(imp)] + ci_left)
     span = (xr - xl) or 1.0
 
     fig = go.Figure()
@@ -301,9 +391,11 @@ def gain_dumbbell(gain_df: pd.DataFrame, *, metric=None, height=460) -> go.Figur
         customdata=insts,
         hovertemplate="<b>%{customdata}</b><br>Woods Run mean: %{x:.1f}<extra></extra>"))
 
-    # Improved dots — gold ring when significant
+    # Improved dots — gold ring when significant; grey whisker = 95% CI of the gain
     fig.add_trace(go.Scatter(
         x=imp, y=ys, mode="markers", name="Improved",
+        error_x=dict(type="data", symmetric=False, array=err_plus, arrayminus=err_minus,
+                     color=Color.MUTED, thickness=1.3, width=5),
         marker=dict(size=14, color=Color.IMPROVED,
                     line=dict(width=[2.4 if s else 1.2 for s in sig],
                               color=[Color.GOLD if s else "white" for s in sig])),
@@ -312,8 +404,10 @@ def gain_dumbbell(gain_df: pd.DataFrame, *, metric=None, height=460) -> go.Figur
                        "<br>Woods Run: %{customdata[2]:.1f}"
                        "<br>Realized gain: %{customdata[1]:+.1f}%<extra></extra>")))
 
-    # gain % labels just right of each pair
-    label_x = [max(woods[i], imp[i]) + span * 0.03 for i in range(n)]
+    # gain % labels just right of each pair (clear of the CI whisker)
+    right_end = [max(woods[i], imp[i], (woods[i] + dhi[i]) if dhi[i] is not None else imp[i])
+                 for i in range(n)]
+    label_x = [right_end[i] + span * 0.03 for i in range(n)]
     labels  = [f"{gains[i]:+.0f}%{(' ' + stars[i]) if stars[i] and stars[i] != 'ns' else ''}"
                for i in range(n)]
     lcol    = [Color.POSITIVE if gains[i] >= 0 else Color.NEGATIVE for i in range(n)]
@@ -332,27 +426,34 @@ def gain_dumbbell(gain_df: pd.DataFrame, *, metric=None, height=460) -> go.Figur
 # 7. NEW — Gain vs site productivity (the trial's core question)
 # --------------------------------------------------------------------------- #
 def gain_vs_productivity(gain_df: pd.DataFrame, rel: dict, *, metric=None, height=420) -> go.Figure:
+    """Realized gain vs site productivity. The y-axis is ABSOLUTE gain
+    (Improved - Woods Run, in metric units), not gain %, because gain % has the
+    Woods Run mean in its denominator and regressing it on that same mean would
+    fabricate a negative slope. Hover still reports the % for context."""
     if gain_df is None or gain_df.empty:
         return empty_fig(height=height)
-    d = gain_df.dropna(subset=["woods_mean", "gain_pct"])
+    d = gain_df.dropna(subset=["woods_mean", "gain_abs"])
     if d.empty:
         return empty_fig(height=height)
+    unit = config.METRICS.get(metric, {}).get("unit", "")
     sig = d[d["significant"]]
     nsig = d[~d["significant"]]
+    hov = ("%{text}<br>Woods Run mean %{x:.1f}<br>"
+           "Realized gain %{y:+.2f} " + unit + "  (%{customdata:+.1f}%)<extra></extra>")
     fig = go.Figure()
     fig.add_hline(y=0, line_width=1, line_color=Color.GRID)
     fig.add_trace(go.Scatter(
-        x=nsig["woods_mean"], y=nsig["gain_pct"], mode="markers+text",
+        x=nsig["woods_mean"], y=nsig["gain_abs"], mode="markers+text", customdata=nsig["gain_pct"],
         text=nsig["installation"], textposition="top center", textfont=dict(size=9, color=Color.MUTED),
         marker=dict(size=11, color=lighten(Color.NAVY, 0.4), line=dict(width=1, color="white")),
-        name="n.s.", hovertemplate="%{text}<br>site mean %{x:.1f}<br>gain %{y:+.1f}%<extra></extra>"))
+        name="n.s.", hovertemplate=hov))
     if not sig.empty:
         fig.add_trace(go.Scatter(
-            x=sig["woods_mean"], y=sig["gain_pct"], mode="markers+text",
+            x=sig["woods_mean"], y=sig["gain_abs"], mode="markers+text", customdata=sig["gain_pct"],
             text=sig["installation"], textposition="top center", textfont=dict(size=9, color=Color.INK),
             marker=dict(size=13, color=Color.GOLD, line=dict(width=1.4, color=Color.NAVY)),
-            name="p < 0.05", hovertemplate="%{text}<br>site mean %{x:.1f}<br>gain %{y:+.1f}%<extra></extra>"))
-    # regression line
+            name="p < 0.05", hovertemplate=hov))
+    # regression line (fit on absolute gain)
     if rel and rel.get("n", 0) >= 3 and not np.isnan(rel.get("slope", np.nan)):
         xs = np.linspace(d["woods_mean"].min(), d["woods_mean"].max(), 50)
         ys = rel["intercept"] + rel["slope"] * xs
@@ -361,5 +462,56 @@ def gain_vs_productivity(gain_df: pd.DataFrame, rel: dict, *, metric=None, heigh
             line=dict(color=Color.GOLD, width=2, dash="dash"), hoverinfo="skip"))
     axis = config.METRICS.get(metric, {}).get("axis", "Growth")
     fig.update_xaxes(title=f"Site productivity — Woods Run mean ({axis})")
-    fig.update_yaxes(title="Realized genetic gain (%)", ticksuffix="%")
+    fig.update_yaxes(title=f"Realized gain — Improved − Woods Run ({unit})")
+    return _theme(fig, height=height)
+
+
+# --------------------------------------------------------------------------- #
+# 8. NEW — Survival & damage (shown on the Genetic Gain & Summary tab)
+# --------------------------------------------------------------------------- #
+def mortality_by_site(trees: pd.DataFrame, *, height=440) -> go.Figure:
+    """Horizontal grouped bars: mortality % (Woods Run vs Improved) per
+    installation. ``trees`` is a single-metric tree slice (all rows incl dead)."""
+    if trees is None or trees.empty:
+        return empty_fig("No survival data for this selection", height=height)
+    g = (trees.groupby(["Installation", "Source"])["IsDead"].mean().mul(100).round(1)
+         .reset_index(name="mort"))
+    if g.empty:
+        return empty_fig("No survival data for this selection", height=height)
+    order = g.groupby("Installation")["mort"].mean().sort_values().index.tolist()
+    fig = go.Figure()
+    for src in (config.SOURCE_WOODS, config.SOURCE_IMPROVED):
+        s = g[g["Source"] == src].set_index("Installation").reindex(order).reset_index()
+        fig.add_trace(go.Bar(
+            name=src, orientation="h", y=s["Installation"], x=s["mort"],
+            marker_color=source_color(src),
+            hovertemplate="%{y}<br>%{x:.1f}% dead<extra>" + src + "</extra>"))
+    fig.update_layout(barmode="group")
+    fig.update_xaxes(title="Mortality (%)", ticksuffix="%")
+    fig.update_yaxes(title=None, automargin=True)
+    return _theme(fig, height=height)
+
+
+def damage_agents(trees: pd.DataFrame, *, height=440, top=8) -> go.Figure:
+    """Top damage / defect agents as a % of each source's trees. ``trees`` is a
+    single-metric slice (all rows) so each tree is counted once, not per metric."""
+    if trees is None or trees.empty:
+        return empty_fig("No data for this selection", height=height)
+    n_by_src = trees.groupby("Source").size()
+    d = trees[trees["HasDefect"]]
+    if d.empty:
+        return empty_fig("No recorded damage for this selection", height=height)
+    cnt = d.groupby(["Defect", "Source"]).size().reset_index(name="n")
+    cnt["pct"] = cnt.apply(lambda r: 100 * r["n"] / n_by_src.get(r["Source"], 1), axis=1)
+    totals = cnt.groupby("Defect")["n"].sum().nlargest(top).index.tolist()
+    cnt = cnt[cnt["Defect"].isin(totals)]
+    fig = go.Figure()
+    for src in (config.SOURCE_WOODS, config.SOURCE_IMPROVED):
+        s = cnt[cnt["Source"] == src].set_index("Defect").reindex(totals).reset_index()
+        fig.add_trace(go.Bar(
+            name=src, x=s["Defect"], y=s["pct"], marker_color=source_color(src),
+            hovertemplate="%{x}<br>%{y:.1f}% of trees<extra>" + src + "</extra>"))
+    fig.update_layout(barmode="group", bargap=0.25)
+    fig.update_xaxes(title=None, tickangle=-25, type="category")
+    fig.update_yaxes(title="% of trees affected", ticksuffix="%")
     return _theme(fig, height=height)

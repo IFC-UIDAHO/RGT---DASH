@@ -13,14 +13,16 @@
     var btn = document.getElementById("theme-toggle");
     if (btn) {
       btn.textContent = (t === "dark") ? "☀️" : "🌙";
-      btn.setAttribute("title", (t === "dark") ? "Switch to light theme" : "Switch to dark theme");
+      var lbl = (t === "dark") ? "Switch to light theme" : "Switch to dark theme";
+      btn.setAttribute("title", lbl);
+      btn.setAttribute("aria-label", lbl);
     }
   }
   function current() {
     return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
   }
 
-  // Initial theme: saved choice → system preference → light.
+  // Initial theme: saved choice -> system preference -> light.
   var saved = null;
   try { saved = localStorage.getItem(KEY); } catch (e) {}
   if (!saved) {
@@ -46,15 +48,6 @@
     apply(current());
     if (++tries > 24) clearInterval(iv);
   }, 250);
-
-  // ---- Report film bridge: when the loading film finishes its cycle (or the
-  //      report is ready and it chooses to), it posts 'rgt-reveal'. We trigger
-  //      the same path as the Skip button to drop the film and show the report.
-  window.addEventListener("message", function (e) {
-    var d = e && e.data;
-    if (d && d.type === "rgt-reveal") {
-      var btn = document.getElementById("report-skip");
-      if (btn) btn.click();
-    }
-  });
+  // (Report film -> reveal is handled entirely by the single Dash _auto_reveal
+  //  callback now; the old postMessage/Skip bridge has been removed.)
 })();

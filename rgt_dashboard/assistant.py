@@ -26,10 +26,15 @@ SYSTEM_PROMPT = (
     "DEFINITIONS:\n"
     "- Realized genetic gain (%) = (Improved mean minus Woods Run mean) / Woods Run mean x 100, "
     "for an installation/year/metric (White, Adams & Neale 2007, Forest Genetics, CABI).\n"
+    "- Growth means (and therefore gain) use SURVIVING ORIGINAL trees only: trees coded dead or "
+    "replacement are excluded so gain is not biased by younger replants. Mortality is reported "
+    "separately and DOES count them.\n"
     "- Significance: Welch t-test on seedlot (genetic-entry) means; p<0.05 significant. "
     "Stars * p<0.05, ** p<0.01, *** p<0.001.\n"
     "- Gain vs site productivity: Pearson r between Woods Run site mean (productivity proxy) "
-    "and realized gain %. Negative r = gains larger on poorer sites (G x E, Stonecypher 1996).\n"
+    "and ABSOLUTE realized gain (Improved - Woods Run, metric units -- absolute, not %, because "
+    "gain % carries the Woods Run mean in its denominator and would bias the regression). "
+    "Negative r = gains larger on poorer sites (G x E, Stonecypher 1996).\n"
     "- Negative gain = Improved under-performed the local check. CORE = main sites; "
     "TRANSFER = off-site climate-transfer tests.\n\n"
     "YOU RECEIVE TWO JSON CONTEXT BLOCKS each message:\n"
@@ -49,9 +54,25 @@ def context_block(context: dict) -> str:
             + json.dumps(context, indent=1, default=str))
 
 
+# Words that signal an analytical question (worth the large model). Short factual
+# lookups ("what's the gain at HOODOO?") get the fast model instead. Reports never
+# go through here -- they always use the large model explicitly.
+_ANALYTICAL = (
+    "why", "explain", "analyz", "analyse", "compare", "comparison", "versus", " vs ",
+    "trend", "relationship", "interpret", "recommend", "should", "driver", "because",
+    "implication", "across all", "g×e", "gxe", "stability", "trade-off", "tradeoff",
+    "deploy", "summary", "summarise", "summarize", "overview", "assess", "evaluate",
+)
+
+
 def auto_model(prompt: str) -> str:
-    """Always use the large model for quality."""
-    return MindRouter.LARGE_MODEL
+    """Route the chat assistant: short factual lookups go to the fast model;
+    long or analytical questions get the large model. (The report engine calls
+    the large model directly and never routes through here.)"""
+    p = (prompt or "").lower()
+    if len(p) > 160 or any(w in p for w in _ANALYTICAL):
+        return MindRouter.LARGE_MODEL
+    return MindRouter.DEFAULT_MODEL
 
 
 class MindRouterClient:

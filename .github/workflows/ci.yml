@@ -1,0 +1,41 @@
+name: CI
+
+# Byte-compile the app and run the golden-value tests on every push / PR, so a
+# refactor that breaks the gain math or the modules fails fast.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+
+      - name: Byte-compile (syntax check every module)
+        run: python -m compileall -q rgt_dashboard app.py
+
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Record resolved versions (reproducibility aid)
+        if: always()
+        run: pip freeze > resolved-requirements.txt
+
+      - name: Upload resolved versions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resolved-requirements
+          path: resolved-requirements.txt
