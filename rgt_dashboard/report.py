@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-ForestTask report generator.
+ForestAsk report generator.
 
 Turns a natural-language request ("report on installation HOODOO", "report on
 seedlot 97-72", "overall report for Year 3", "report on 2 seedlots 97-72 and
@@ -255,7 +255,7 @@ class Report:
 # =========================================================================== #
 def _narrate(client, instruction: str, data_context: dict, fallback: str, *, deep=False) -> str:
     sys = (
-        "You are ForestTask, a forest-biometrics analyst writing a formal report for the "
+        "You are ForestAsk, a forest-biometrics analyst writing a formal report for the "
         "Intermountain Forestry Cooperative Realized Genetic Gain Trials (RGT), which compare "
         "genetically Improved Douglas-fir against local Woods Run (unimproved) checks across "
         "installations in two regions: the Inland Northwest (INW) and the Klamath-Siskiyou (K-S), over "
@@ -1042,7 +1042,7 @@ def _subtitle(spec):
 
 
 REPORT_SYS = (
-    "You are ForestTask, a forest-biometrics analyst writing a formal, IFC-branded report on the "
+    "You are ForestAsk, a forest-biometrics analyst writing a formal, IFC-branded report on the "
     "Realized Genetic Gain Trials (RGT). The trials compare genetically IMPROVED Douglas-fir against "
     "local WOODS RUN (unimproved) checks across installations in two regions: the Inland Northwest "
     "(INW) and the Klamath-Siskiyou (K-S), over three measurement years and three growth metrics "

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-ForestTask -- MindRouter-backed report assistant.
+ForestAsk -- MindRouter-backed report assistant.
 
 One branded assistant; best model auto-selected per request.
 reasoning_effort=maximum for all calls. max_tokens from config.
@@ -17,7 +17,7 @@ from .config import MindRouter
 logger = logging.getLogger("rgt.assistant")
 
 SYSTEM_PROMPT = (
-    "You are ForestTask, the report assistant for the Intermountain Forestry Cooperative "
+    "You are ForestAsk, the report assistant for the Intermountain Forestry Cooperative "
     "(University of Idaho) Realized Genetic Gain Trials (RGT). The trials compare genetically "
     "Improved Douglas-fir seedlots against local Woods Run (unimproved) checks across "
     "installations in two regions: the Inland Northwest (INW) and the Klamath-Siskiyou (K-S), over "
@@ -92,7 +92,7 @@ class MindRouterClient:
              reasoning_effort=None, timeout=None) -> dict:
         if not self.configured:
             return dict(ok=False, content="", model=None, error=(
-                "ForestTask is offline. Add MINDROUTER_API_KEY to the .env file and restart."))
+                "ForestAsk is offline. Add MINDROUTER_API_KEY to the .env file and restart."))
         chosen = model or MindRouter.LARGE_MODEL
         payload = {
             "model": chosen, "messages": messages,

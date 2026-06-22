@@ -275,21 +275,21 @@ def deployment_call(store, *, region, installation) -> dict:
         level, verdict = "none", "Insufficient data"
         headline = "No realized-gain estimates at this site yet."
     elif neg_sig > 0 and pos_sig == 0:
-        level, verdict = "hold", "Hold"
+        level, verdict = "negative", "Negative"
         headline = "Improved stock significantly underperformed the local Woods Run check."
     elif pos_sig >= 1 and neg_sig == 0 and not severe_mort:
-        level, verdict = "deploy", "Deploy"
+        level, verdict = "strong", "Very positive"
         headline = "Significant positive realized gain with acceptable survival."
     elif pos_sig >= 1 and severe_mort:
-        level, verdict = "caution", "Deploy with caution"
+        level, verdict = "positive", "Positive"
         headline = (f"Positive growth gain, but Improved mortality runs ~{mort_gap:.0f} pts "
-                    "above the check — weigh survival before deploying.")
+                    "above the check — weigh survival before any operational call.")
     elif pos_any >= max(1, n - 1):
-        level, verdict = "caution", "Deploy with caution"
+        level, verdict = "positive", "Positive"
         headline = "Gains lean positive but aren't statistically conclusive (treat as provisional)."
     else:
-        level, verdict = "hold", "Hold"
-        headline = "Realized gains are inconclusive or negative at this site."
+        level, verdict = "neutral", "Neutral"
+        headline = "Realized gains are inconclusive at this site."
 
     return dict(level=level, verdict=verdict, headline=headline, n=n,
                 per_metric=per_metric, mort_gap=mort_gap,

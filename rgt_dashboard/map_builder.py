@@ -19,43 +19,52 @@ from . import config
 # Installation location table  (from AllRGT.xlsx)
 # ─────────────────────────────────────────────────────────────────────────────
 LOCATIONS = [
+    # Pin coordinates are the CENTROID of each installation's 6 plots, derived
+    # from plots.gdb (see data/plot_grids.geojson), so every pin sits on its plots.
+    # Installations with both a Core and a Transfer site get a separate pin each.
     # INW — Idaho / Washington
-    {"name": "Hoodoo Saddle",    "lat": 48.036259, "lon": -116.911796, "region": "INW",
+    {"name": "Hoodoo Saddle", "lat": 48.036754, "lon": -116.912039, "region": "INW",
      "csv": ["HOODOO"]},
-    {"name": "Lost Fromelt",     "lat": 46.442957, "lon": -115.802066, "region": "INW",
+    {"name": "Lost Fromelt", "lat": 46.446858, "lon": -115.800729, "region": "INW",
      "csv": ["LOST FROMELT"]},
-    {"name": "Silver Spur",      "lat": 46.667659, "lon": -116.312500, "region": "INW",
+    {"name": "Silver Spur", "lat": 46.668815, "lon": -116.316722, "region": "INW",
      "csv": ["SILVER SPUR"]},
-    {"name": "Wild Turkey",      "lat": 48.791146, "lon": -117.728751, "region": "INW",
+    {"name": "Wild Turkey", "lat": 48.790739, "lon": -117.725894, "region": "INW",
      "csv": ["WILD TURKEY"]},
-    {"name": "Sherry Ridge",     "lat": 48.595805, "lon": -117.507050, "region": "INW",
-     "csv": ["SHERRY CORE", "SHERRY TRANSFER"]},
-    {"name": "Sitka",            "lat": 45.523972, "lon": -118.464741, "region": "INW",
-     "csv": ["SITKA CORE", "SITKA TRAN"]},
-    {"name": "Casa",             "lat": 45.826292, "lon": -117.725293, "region": "INW",
+    {"name": "Sherry Ridge — Core", "lat": 48.596225, "lon": -117.505798, "region": "INW",
+     "csv": ["SHERRY CORE"]},
+    {"name": "Sherry Ridge — Transfer", "lat": 48.598404, "lon": -117.502849, "region": "INW",
+     "csv": ["SHERRY TRANSFER"]},
+    {"name": "Sitka — Core", "lat": 45.525461, "lon": -118.468884, "region": "INW",
+     "csv": ["SITKA CORE"]},
+    {"name": "Sitka — Transfer", "lat": 45.526377, "lon": -118.467627, "region": "INW",
+     "csv": ["SITKA TRAN"]},
+    {"name": "Casa", "lat": 45.826505, "lon": -117.724993, "region": "INW",
      "csv": ["CASA"]},
-    {"name": "Dawson's Delight", "lat": 48.769104, "lon": -116.248716, "region": "INW",
+    {"name": "Dawson's Delight", "lat": 48.767898, "lon": -116.247506, "region": "INW",
      "csv": ["DAWSON"]},
-    {"name": "Gold View",        "lat": 46.997424, "lon": -116.158962, "region": "INW",
+    {"name": "Gold View", "lat": 46.998902, "lon": -116.156557, "region": "INW",
      "csv": ["GOLDVIEW"]},
-    {"name": "Carscallen",       "lat": 47.029834, "lon": -116.852607, "region": "INW",
-     "csv": ["CARSCALLEN CORE", "CARSCALLEN TRANSFER"]},
+    {"name": "Carscallen — Core", "lat": 47.028726, "lon": -116.852722, "region": "INW",
+     "csv": ["CARSCALLEN CORE"]},
+    {"name": "Carscallen — Transfer", "lat": 47.028908, "lon": -116.850874, "region": "INW",
+     "csv": ["CARSCALLEN TRANSFER"]},
     # K-S — Southern Oregon
-    {"name": "Boundary North",   "lat": 42.703366, "lon": -122.378000, "region": "K-S",
+    {"name": "Boundary North", "lat": 42.704539, "lon": -122.408166, "region": "K-S",
      "csv": []},
-    {"name": "Plan D",           "lat": 42.705716, "lon": -122.489000, "region": "K-S",
+    {"name": "Plan D", "lat": 42.709518, "lon": -122.495879, "region": "K-S",
      "csv": ["PLAN D #1"]},
-    {"name": "Lodgepole 1",      "lat": 42.622810, "lon": -122.434157, "region": "K-S",
+    {"name": "Lodgepole 1", "lat": 42.622863, "lon": -122.434097, "region": "K-S",
      "csv": ["LODGEPOLE 1"]},
-    {"name": "Lodgepole 2",      "lat": 42.600529, "lon": -122.427773, "region": "K-S",
+    {"name": "Lodgepole 2", "lat": 42.600534, "lon": -122.427863, "region": "K-S",
      "csv": ["LODGEPOLE 2"]},
-    {"name": "Rum Creek",        "lat": 42.599829, "lon": -123.646192, "region": "K-S",
+    {"name": "Rum Creek", "lat": 42.599773, "lon": -123.646166, "region": "K-S",
      "csv": []},
-    {"name": "Lickity Split",    "lat": 42.141993, "lon": -122.921986, "region": "K-S",
+    {"name": "Lickity Split", "lat": 42.140928, "lon": -122.921594, "region": "K-S",
      "csv": []},
-    {"name": "Big Butte",        "lat": 42.551133, "lon": -122.539295, "region": "K-S",
+    {"name": "Big Butte", "lat": 42.549727, "lon": -122.537667, "region": "K-S",
      "csv": []},
-    {"name": "Fish Hatchery",    "lat": 42.535643, "lon": -122.540495, "region": "K-S",
+    {"name": "Fish Hatchery", "lat": 42.535804, "lon": -122.54024, "region": "K-S",
      "csv": []},
 ]
 
@@ -75,7 +84,7 @@ def build_map_data(store) -> list:
     try:
         from . import stats as _stats
     except ImportError:
-        return [dict(loc, gains={}, avg_gain=None) for loc in LOCATIONS]
+        return [dict(loc, gains={}, avg_gain=None, vol_gain=None) for loc in LOCATIONS]
 
     metrics = list(store.metrics())
     years   = list(store.years())
@@ -84,7 +93,7 @@ def build_map_data(store) -> list:
     for loc in LOCATIONS:
         if not loc.get("csv"):
             # Installed site with no trial data yet — still show a (grey) pin.
-            result.append(dict(loc, gains={}, avg_gain=None, n_years=0))
+            result.append(dict(loc, gains={}, avg_gain=None, vol_gain=None, n_years=0))
             continue
         entry = dict(loc)
         entry["gains"]    = {}
@@ -137,9 +146,35 @@ def build_map_data(store) -> list:
         entry["avg_gain"] = (
             round(sum(all_gains) / len(all_gains), 1) if all_gains else None
         )
+        # Pin colour metric = latest-year VOLUME realized gain (the standard
+        # genetic-gain metric), not the cross-metric average.
+        vol_gain = None
+        for csv_name in loc["csv"]:
+            cg = entry["gains"].get(csv_name, {})
+            for year in years:                      # ascending -> keep the latest with data
+                d = cg.get(year, {}).get("Volume")
+                if d and d.get("gain_pct") is not None:
+                    vol_gain = d["gain_pct"]
+        entry["vol_gain"] = vol_gain
         result.append(entry)
 
     return result
+
+
+def load_plot_grids() -> dict:
+    """Load the per-plot grid polygons (6 plots per installation) as a GeoJSON
+    FeatureCollection. The file is pre-generated from plots.gdb into data/ so the
+    app stays self-contained (no geopandas/GDAL needed at runtime or on the host).
+
+    Returns an empty FeatureCollection if the file is missing, so the map still
+    renders (just without the zoom-in plot overlay)."""
+    path = config.DATA_DIR / "plot_grids.geojson"
+    try:
+        if path.exists():
+            return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        traceback.print_exc()
+    return {"type": "FeatureCollection", "features": []}
 
 
 def generate_map_html(store) -> None:
@@ -148,14 +183,18 @@ def generate_map_html(store) -> None:
         data = build_map_data(store)
     except Exception:
         traceback.print_exc()
-        data = [dict(loc, gains={}, avg_gain=None, n_years=0) for loc in LOCATIONS]
+        data = [dict(loc, gains={}, avg_gain=None, vol_gain=None, n_years=0) for loc in LOCATIONS]
 
     json_blob = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    html_text = _TEMPLATE.replace("/*__RGT_DATA__*/[]", json_blob)
+    grids_blob = json.dumps(load_plot_grids(), ensure_ascii=False, separators=(",", ":"))
+    html_text = (_TEMPLATE
+                 .replace("/*__RGT_DATA__*/[]", json_blob)
+                 .replace("/*__RGT_PLOTS__*/{}", grids_blob))
 
+    n_plots = len(json.loads(grids_blob).get("features", []))
     out = config.ASSETS_DIR / "installations_map.html"
     out.write_text(html_text, encoding="utf-8")
-    print(f"[map_builder] Written {out}  ({len(data)} installations)")
+    print(f"[map_builder] Written {out}  ({len(data)} installations, {n_plots} plot polygons)")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -367,11 +406,12 @@ html,body,#map{width:100%;height:100%;background:#0d1b2a;font-family:'Inter',san
   -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);transition:background .15s ease,border-color .15s ease;}
 
 /* ── Gain legend (bottom-left) ─────────────────────────────────────────────── */
-#legend{position:absolute;left:14px;bottom:16px;z-index:9400;
-  background:rgba(10,20,36,.86);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(219,168,0,.2);border-radius:14px;padding:11px 13px;color:#fff;
-  font-size:11px;box-shadow:0 12px 44px rgba(0,0,0,.55);max-width:236px;
-  opacity:0;transform:translateY(8px);transition:opacity .5s ease,transform .5s ease;}
+#legend{position:absolute;left:14px;bottom:12px;z-index:9400;
+  background:rgba(10,20,36,.62);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:8px 11px;color:#fff;
+  font-size:10.5px;box-shadow:0 8px 30px rgba(0,0,0,.4);max-width:210px;opacity:0;
+  transform:translateY(8px);transition:opacity .5s ease,transform .5s ease;}
+#legend:hover{background:rgba(10,20,36,.82)}
 #legend.on{opacity:1;transform:none;}
 #legend .lg-title{font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;
   color:rgba(255,255,255,.55);margin-bottom:7px;}
@@ -382,6 +422,110 @@ html,body,#map{width:100%;height:100%;background:#0d1b2a;font-family:'Inter',san
 #legend .lg-row{display:flex;align-items:center;gap:7px;margin-top:8px;color:rgba(255,255,255,.6);}
 #legend .lg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
 #legend .lg-note{margin-top:7px;color:rgba(255,255,255,.4);font-style:italic;line-height:1.35;}
+
+/* ── Plot-grid overlay (6 plots per installation) ───────────────────── */
+.plot-label{
+  background:transparent;border:none;box-shadow:none;
+  font:700 9px/1 'Inter',sans-serif;color:rgba(255,255,255,.9);white-space:nowrap;
+  text-shadow:0 1px 2px rgba(0,0,0,.8);
+  pointer-events:none;
+}
+/* When zoomed into a site, drop the big pin name label so it does not crowd the
+   plot squares (the info panel already shows the name). */
+#map.zoomed-in .pin-label{opacity:0;transition:opacity .2s ease;}
+.plot-label::before{border:none!important}
+.leaflet-tooltip.plot-label{padding:0;margin:0}
+.leaflet-popup-content-wrapper{
+  background:rgba(10,20,36,.95)!important;color:#fff!important;
+  border:1px solid rgba(219,168,0,.28)!important;border-radius:14px!important;
+  box-shadow:0 12px 50px rgba(0,0,0,.6)!important;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+}
+.leaflet-popup-content{margin:13px 16px!important;font-family:'Inter',sans-serif!important;line-height:1.45}
+.leaflet-popup-tip{background:rgba(10,20,36,.95)!important;border:1px solid rgba(219,168,0,.28)!important}
+.leaflet-popup-close-button{color:rgba(255,255,255,.6)!important}
+.pp-name{font-size:15px;font-weight:800;letter-spacing:-.2px;margin-bottom:2px}
+.pp-inst{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:9px}
+.pp-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;
+        font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.pp-imp{background:rgba(224,138,30,.25);border:1px solid rgba(224,138,30,.5);color:#f4c786}
+.pp-wr{background:rgba(47,110,143,.3);border:1px solid rgba(47,110,143,.55);color:#8fbcd4}
+.pp-area{font-size:11px;color:rgba(255,255,255,.45);margin-top:8px}
+#plothint{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%) translateY(8px);
+  z-index:9300;background:rgba(10,20,36,.86);color:rgba(255,255,255,.82);
+  border:1px solid rgba(219,168,0,.25);border-radius:24px;padding:7px 16px;
+  font:600 11.5px 'Inter',sans-serif;letter-spacing:.2px;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  opacity:0;pointer-events:none;transition:opacity .4s ease,transform .4s ease;display:none;
+}
+#plothint.on{opacity:1;transform:translateX(-50%) translateY(0)}
+#plothint b{color:#DBA800;font-weight:800}
+.lg-toggle{display:flex;align-items:center;gap:7px;margin-top:9px;
+  padding-top:8px;border-top:1px solid rgba(255,255,255,.07);cursor:pointer;
+  color:rgba(255,255,255,.7);font-weight:600;font-size:10.5px;user-select:none;}
+.lg-toggle:hover{color:#fff}
+.lg-sw{position:relative;width:30px;height:16px;border-radius:10px;flex-shrink:0;
+  background:rgba(255,255,255,.16);transition:background .2s;}
+.lg-sw::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;
+  border-radius:50%;background:#fff;transition:transform .2s;}
+.lg-toggle.on .lg-sw{background:#1a5499}
+.lg-toggle.on .lg-sw::after{transform:translateX(14px)}
+.lg-swatch{display:inline-block;width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.zoom-btn{
+  display:block;width:100%;margin-top:10px;padding:11px;
+  background:rgba(255,255,255,.05);color:#eaf2fb;border:1px solid rgba(219,168,0,.3);
+  border-radius:12px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.3px;
+  transition:all .2s;
+}
+.zoom-btn:hover{background:rgba(219,168,0,.14);border-color:#DBA800;color:#fff}
+
+
+/* Imagery time slider (bottom-centre) — slim & translucent, brightens on hover */
+#timebar{
+  position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+  z-index:9300;width:min(560px,calc(100vw - 360px));min-width:290px;
+  background:rgba(10,20,36,.42);border:1px solid rgba(255,255,255,.10);
+  border-radius:11px;padding:5px 14px 6px;color:#fff;opacity:.72;
+  box-shadow:0 6px 20px rgba(0,0,0,.32);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  transition:opacity .2s ease, background .2s ease;
+}
+#timebar:hover{opacity:1;background:rgba(10,20,36,.8)}
+#timebar .tb-head{display:flex;align-items:center;gap:8px;margin-bottom:0}
+#timebar .tb-lbl{font:800 9px 'Inter',sans-serif;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.42)}
+#timebar .tb-val{font:800 12px 'Inter',sans-serif;color:#DBA800}
+#timebar .tb-meta{font:600 10px 'Inter',sans-serif;color:rgba(159,230,192,.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#timebar .tb-chk{margin-left:auto;display:flex;align-items:center;gap:5px;font:600 10px 'Inter',sans-serif;color:rgba(255,255,255,.6);cursor:pointer;flex-shrink:0}
+#timebar .tb-chk input{accent-color:#DBA800;margin:0}
+#timebar input[type=range]{width:100%;-webkit-appearance:none;appearance:none;height:3px;border-radius:3px;
+  background:rgba(255,255,255,.16);outline:none;margin:2px 0 1px}
+#timebar input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;
+  border-radius:50%;background:#DBA800;border:2px solid #fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+#timebar input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:#DBA800;
+  border:2px solid #fff;cursor:pointer}
+#timebar .tb-ticks{display:flex;justify-content:space-between;margin-top:0}
+#timebar .tb-ticks span{font:600 8px 'Inter',sans-serif;color:rgba(255,255,255,.38)}
+
+/* "Imagery" control (custom) — dark glass, top-left under the zoom buttons */
+.rgt-imgctl{
+  background:rgba(10,20,36,.92)!important;color:#fff!important;
+  border:1px solid rgba(219,168,0,.25)!important;border-radius:12px!important;
+  box-shadow:0 8px 30px rgba(0,0,0,.5)!important;padding:8px 10px!important;
+  -webkit-backdrop-filter:blur(14px)!important;backdrop-filter:blur(14px)!important;
+  min-width:158px;
+}
+.rgt-imgctl .ic-row{display:flex;align-items:center;gap:8px}
+.rgt-imgctl .ic-lbl{font:800 10px 'Inter',sans-serif;text-transform:uppercase;letter-spacing:.6px;color:rgba(255,255,255,.55)}
+.rgt-imgctl select{
+  flex:1;background:rgba(255,255,255,.07);color:#fff;
+  border:1px solid rgba(255,255,255,.18);border-radius:7px;
+  font:600 12px 'Inter',sans-serif;padding:3px 6px;cursor:pointer;
+}
+.rgt-imgctl select option{background:#0d1b2a;color:#fff}
+.rgt-imgctl .ic-chk{display:flex;align-items:center;gap:6px;margin-top:7px;
+  font:600 11px 'Inter',sans-serif;color:rgba(255,255,255,.75);cursor:pointer}
+.rgt-imgctl .ic-chk input{accent-color:#DBA800;margin:0}
 
 /* Leaflet overrides */
 .leaflet-control-attribution{font-size:10px!important;background:rgba(0,0,0,.45)!important;color:rgba(255,255,255,.5)!important}
@@ -395,14 +539,6 @@ html,body,#map{width:100%;height:100%;background:#0d1b2a;font-family:'Inter',san
 </head>
 <body>
 
-<!-- Intro splash -->
-<div id="intro">
-  <div class="i-badge">Intermountain Forestry Cooperative</div>
-  <div class="i-title">RGT Installation Map</div>
-  <div class="i-sub">Realized Genetic Gain Trials &nbsp;·&nbsp; Pacific Northwest</div>
-  <div class="i-dots"><span></span><span></span><span></span></div>
-</div>
-
 <!-- Map container -->
 <div id="map"></div>
 
@@ -415,13 +551,25 @@ html,body,#map{width:100%;height:100%;background:#0d1b2a;font-family:'Inter',san
 
 <!-- Gain legend -->
 <div id="legend">
-  <div class="lg-title">Avg. realized gain</div>
+  <div class="lg-title">Volume gain &middot; latest yr</div>
   <div class="lg-scale">
     <i style="background:#b71c1c"></i><i style="background:#e53935"></i><i style="background:#ef9a9a"></i><i style="background:#66bb6a"></i><i style="background:#388e3c"></i><i style="background:#2e7d32"></i><i style="background:#1b5e20"></i>
   </div>
   <div class="lg-ends"><span>&minus;10%</span><span>0</span><span>+20%</span></div>
-  <div class="lg-note">Pulsing pins mark standout sites (avg gain &ge; 15%).</div>
+  <div class="lg-toggle on" id="plotToggle" onclick="togglePlots()">
+    <span class="lg-sw"></span>
+    <span>Show plot grids</span>
+  </div>
+  <div class="lg-row" style="margin-top:8px">
+    <span class="lg-swatch" style="background:transparent;border:2px solid #FFB74D"></span>Improved (IMP&nbsp;4–6)
+  </div>
+  <div class="lg-row">
+    <span class="lg-swatch" style="background:transparent;border:2px solid #4FC3F7"></span>Woods&nbsp;Run (WR&nbsp;1–3)
+  </div>
 </div>
+
+<!-- Imagery time slider (built live from the Esri Wayback index) -->
+<div id="timebar"></div>
 
 <!-- Info panel -->
 <div id="panel">
@@ -433,6 +581,7 @@ html,body,#map{width:100%;height:100%;background:#0d1b2a;font-family:'Inter',san
 <script>
 // ── Data ────────────────────────────────────────────────────────────────────
 const RGT = /*__RGT_DATA__*/[];
+const PLOT_GRIDS = /*__RGT_PLOTS__*/{};
 
 // ── Colour helpers ───────────────────────────────────────────────────────────
 function gainHex(g) {
@@ -508,35 +657,73 @@ function pinLabel(g) {
 const map = L.map('map', { zoomControl: false, attributionControl: false,
                            maxZoom: 21, minZoom: 2 });
 
-// ESRI World Imagery — highest-resolution free satellite basemap (no API key).
-// maxNativeZoom 19 = real tiles; the map can over-zoom to 21 for a closer look.
-L.tileLayer(
-  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 21, maxNativeZoom: 19 }).addTo(map);
-L.tileLayer(
+// Imagery basemaps (free, no API key). Default = Esri World Imagery — always the
+// latest available, sub-metre. The "Imagery" control (top-left) also offers Esri
+// Wayback: immutable, exactly-dated archive snapshots, so you can compare a site
+// before vs after harvest with a date you can trust.
+const ESRI_IMAGERY = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const ESRI_META    = 'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer';
+const WAYBACK_TILE = 'https://wayback.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/WMTS/1.0.0/default028mm/MapServer/tile/{rel}/{z}/{y}/{x}';
+
+// Embedded FALLBACK list (used only if the live Wayback index can't be fetched).
+// The live fetch (loadWaybackIndex) is the normal path and auto-discovers new
+// Esri releases. meta = that version's metadata service.
+const WAYBACK_FALLBACK = [
+  {date:'2026-05-28',rel:'10842',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2026_r05/MapServer'},
+  {date:'2025-12-18',rel:'13192',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2025_r12/MapServer'},
+  {date:'2024-12-12',rel:'16453',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2024_r13/MapServer'},
+  {date:'2023-12-07',rel:'56102',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2023_r11/MapServer'},
+  {date:'2022-12-14',rel:'45134',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2022_r15/MapServer'},
+  {date:'2021-12-21',rel:'26120',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2021_r17/MapServer'},
+  {date:'2020-12-16',rel:'29260',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2020_r16/MapServer'},
+  {date:'2019-12-12',rel:'4756',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2019_r16/MapServer'},
+  {date:'2018-11-29',rel:'239',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2018_r16/MapServer'},
+  {date:'2017-07-14',rel:'3319',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2017_r13/MapServer'},
+  {date:'2016-12-07',rel:'6678',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2016_r21/MapServer'},
+  {date:'2015-09-30',rel:'3630',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2015_r16/MapServer'},
+  {date:'2014-12-30',rel:'5844',meta:'https://metadata.maptiles.arcgis.com/arcgis/rest/services/World_Imagery_Metadata_2014_r21/MapServer'},
+];
+
+const baseEsri = L.tileLayer(ESRI_IMAGERY, { maxZoom: 21, maxNativeZoom: 19 });
+baseEsri.setZIndex(0);
+baseEsri.addTo(map);
+
+// Place / boundary labels, kept above the imagery and toggleable.
+const labels = L.tileLayer(
   'https://services.arcgisonline.com/arcgis/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  { maxZoom: 21, maxNativeZoom: 19, opacity: 0.75 }).addTo(map);
+  { maxZoom: 21, maxNativeZoom: 19, opacity: 0.75 });
+labels.setZIndex(10);
+labels.addTo(map);
+
+// Active-base bookkeeping (drives the footnote's live date lookup).
+var currentBase    = baseEsri;
+var currentMetaUrl = ESRI_META;
+var currentLabel   = 'Esri World Imagery';
+var currentSub     = 'latest · ≤ 1 m';
+
+function setBasemap(kind, rel, meta, dateLabel) {
+  if (currentBase) map.removeLayer(currentBase);
+  if (kind === 'wayback') {
+    currentBase    = L.tileLayer(WAYBACK_TILE.replace('{rel}', rel), { maxZoom: 21, maxNativeZoom: 19 });
+    currentMetaUrl = meta;
+    currentLabel   = 'Esri Wayback';
+    currentSub     = 'snapshot ' + dateLabel + ' · ≤ 1 m';
+  } else {
+    currentBase    = baseEsri;
+    currentMetaUrl = ESRI_META;
+    currentLabel   = 'Esri World Imagery';
+    currentSub     = 'latest · ≤ 1 m';
+  }
+  currentBase.setZIndex(0);
+  currentBase.addTo(map);
+  renderBaseInfo('');
+  fetchMeta();
+}
+
 
 L.control.zoom({ position: 'topleft' }).addTo(map);
 L.control.attribution({ position: 'bottomleft',
-  prefix: 'ESRI World Imagery &nbsp;·&nbsp; Leaflet &nbsp;·&nbsp; IFC RGT' }).addTo(map);
-
-// ── Failsafe ──────────────────────────────────────────────────────────────────
-function hideIntro() {
-  const el = document.getElementById('intro');
-  if (el) { el.classList.add('fade'); setTimeout(function(){ el.style.display='none'; }, 1000); }
-  document.getElementById('chips').classList.add('on');
-  var lg = document.getElementById('legend'); if (lg) lg.classList.add('on');
-}
-window.onerror = function() { hideIntro(); return false; };
-setTimeout(hideIntro, 12000);
-
-// ── Google-Earth zoom ─────────────────────────────────────────────────────────
-map.setView([35, -100], 3, { animate: false });
-setTimeout(() => map.flyTo([44.5, -112], 5.0, { duration: 2.0, easeLinearity: 0.18 }), 700);
-setTimeout(() => map.flyTo([46.0, -119.5], 7.1, { duration: 1.7, easeLinearity: 0.2 }), 3500);
-setTimeout(() => { hideIntro(); addMarkers(); }, 5900);
-setTimeout(() => { fitAll(); }, 6400);   // default view frames BOTH regions
+  prefix: 'Leaflet &nbsp;·&nbsp; IFC RGT' }).addTo(map);
 
 // ── Info panel ────────────────────────────────────────────────────────────────
 function closePanel() {
@@ -596,9 +783,24 @@ function miniPlot(title, unit, years, woods, imp) {
 function openPanel(loc) {
   const csv   = loc.csv || [];
   const isInW = loc.region === 'INW';
-  const g     = loc.avg_gain;
+  // Headline = latest-year VOLUME realized gain (the standard gain metric),
+  // not an average across metrics.
+  let volG = null, volYr = null, volStars = '';
+  (csv || []).forEach(function (cn) {
+    const cg = (loc.gains || {})[cn] || {};
+    Object.keys(cg).sort().forEach(function (yr) {
+      const d = (cg[yr] || {})['Volume'];
+      if (d && d.gain_pct !== null && d.gain_pct !== undefined) {
+        volG = d.gain_pct; volYr = yr; volStars = (d.stars && d.stars !== 'ns') ? d.stars : '';
+      }
+    });
+  });
+  const g     = (volG !== null) ? volG : loc.avg_gain;
   const gCls  = g === null ? 'gns' : (g >= 0 ? 'gpos' : 'gneg');
-  const gTxt  = g === null ? 'No data' : ((g >= 0 ? '+' : '') + g.toFixed(1) + '%');
+  const gTxt  = g === null ? 'No data'
+              : ((g >= 0 ? '+' : '') + g.toFixed(1) + '%' + (volG !== null ? volStars : ''));
+  const gLbl  = (volG !== null) ? ('Volume gain \u00b7 ' + String(volYr).replace('Year', 'Yr '))
+                                : 'Avg. realized gain';
 
   // Site type badges
   const hasCore = csv.some(n => !n.includes('TRANSFER') && !n.includes('TRAN'));
@@ -626,7 +828,7 @@ function openPanel(loc) {
     <div class="ph-badges">${badges}</div>
     <div class="ph-gain">
       <div>
-        <div class="ph-gain-lbl">Avg. Realized Gain</div>
+        <div class="ph-gain-lbl">${gLbl}</div>
       </div>
       <div class="ph-gain-val ${gCls}">${gTxt}</div>
     </div>
@@ -671,7 +873,7 @@ function openPanel(loc) {
               '<span class="ml-x">mean by year</span></div>';
 
       // one small 2-line plot per metric (year on x; Improved vs Woods Run mean)
-      let lastYrMort = null;
+      let lastYrMort = null, lastYrMortYear = null;
       body += '<div class="minis">';
       mList.forEach(function (m) {
         const woodsArr = [], impArr = []; let unit = '', has = false;
@@ -681,7 +883,7 @@ function openPanel(loc) {
             woodsArr.push(d.woods_mean); impArr.push(d.imp_mean);
             if (d.unit) unit = d.unit;
             if (d.woods_mean != null || d.imp_mean != null) has = true;
-            lastYrMort = d;   // ends on the latest year with data
+            lastYrMort = d; lastYrMortYear = yr;   // latest year that actually has data
           } else { woodsArr.push(null); impArr.push(null); }
         });
         if (has) body += miniPlot(m, unit, years, woodsArr, impArr);
@@ -690,7 +892,7 @@ function openPanel(loc) {
 
       // Mortality
       if (lastYrMort && (lastYrMort.imp_mort !== null || lastYrMort.woods_mort !== null)) {
-        const lastYr = years[years.length - 1];
+        const lastYr = lastYrMortYear || years[years.length - 1];
         const wm = lastYrMort.woods_mort !== null ? lastYrMort.woods_mort.toFixed(1)+'%' : '—';
         const im = lastYrMort.imp_mort   !== null ? lastYrMort.imp_mort.toFixed(1)+'%'   : '—';
         body += `<div class="mort">Mortality (${lastYr}) &nbsp;·&nbsp;
@@ -718,19 +920,105 @@ let allLayers = [];
 
 function addMarkers() {
   RGT.forEach(function(loc, i) {
-    const color = gainHex(loc.avg_gain);
-    const label = pinLabel(loc.avg_gain);
-    const standout = (loc.avg_gain !== null && loc.avg_gain !== undefined && loc.avg_gain >= 15);
+    const gv = (loc.vol_gain !== undefined && loc.vol_gain !== null) ? loc.vol_gain : loc.avg_gain;
+    const color = gainHex(gv);
+    const label = pinLabel(gv);
+    const standout = (gv !== null && gv !== undefined && gv >= 15);
     const icon  = makePin(color, label, true, i, standout, loc.name);
     const m = L.marker([loc.lat, loc.lon], { icon });
-    m.on('click', function() { openPanel(loc); });
+    m.on('click', function() {
+      openPanel(loc);
+      // Auto-fly to the installation so its 6 plots come into view (Google-Earth feel).
+      map.flyTo([loc.lat, loc.lon], 16.5, { duration: 1.6, easeLinearity: 0.2 });
+    });
     m.addTo(map);
     allLayers.push({ marker: m, region: loc.region });
   });
 }
 
 // ── Region filter ──────────────────────────────────────────────────────────────
+// ── Plot-grid overlay (6 plots per installation) ────────────────────
+let plotLayer = null;
+let plotsEnabled = true;
+let currentRegion = 'ALL';
+const PLOT_MIN_ZOOM  = 12;   // polygons appear at/above this zoom
+const LABEL_MIN_ZOOM = 15;   // IMP/WR labels appear at/above this zoom
+
+// Outline-only plots: NO fill, so the satellite imagery shows through and people
+// can actually see the trees. Bright orange (Improved) / cyan-blue (Woods Run)
+// borders read clearly on top of dark canopy.
+function plotStyle(f) {
+  const imp = f.properties.type === 'IMP';
+  const c = imp ? '#FFB74D' : '#4FC3F7';
+  return {
+    color:       c,
+    weight:      2.4,
+    opacity:     1,
+    fill:        true,        // keep a fill target for easy clicking/hover…
+    fillColor:   c,
+    fillOpacity: 0,           // …but invisible until hovered
+  };
+}
+
+function initPlots() {
+  if (!PLOT_GRIDS || !PLOT_GRIDS.features || !PLOT_GRIDS.features.length) return;
+  plotLayer = L.geoJSON(PLOT_GRIDS, {
+    style: plotStyle,
+    onEachFeature: function(f, layer) {
+      const p   = f.properties;
+      const imp = p.type === 'IMP';
+      const src = imp ? 'Improved' : 'Woods Run';
+      layer._region = p.region;
+      layer.bindTooltip(p.plot, {
+        permanent: true, direction: 'center', className: 'plot-label', opacity: 1,
+      });
+      const area = (p.area_m2 != null) ? Math.round(p.area_m2).toLocaleString() : '—';
+      layer.bindPopup(
+        '<div class="pp-name">' + p.plot + '</div>' +
+        '<div class="pp-inst">' + p.inst + '</div>' +
+        '<span class="pp-tag ' + (imp ? 'pp-imp' : 'pp-wr') + '">' + src + '</span>' +
+        '<div class="pp-area">Plot area &asymp; ' + area + ' m&sup2;</div>',
+        { closeButton: true, autoPan: false }
+      );
+      layer.on('mouseover', function() { this.setStyle({ weight: 3.4, fillOpacity: 0.18 }); });
+      layer.on('mouseout',  function() { this.setStyle(plotStyle(f)); });
+    },
+  });
+  map.on('zoomend', updatePlots);
+  updatePlots();
+}
+
+function updatePlots() {
+  if (!plotLayer) return;
+  const z    = map.getZoom();
+  const show = plotsEnabled && z >= PLOT_MIN_ZOOM;
+  var mapEl = document.getElementById('map');
+  if (mapEl) mapEl.classList.toggle('zoomed-in', z >= LABEL_MIN_ZOOM);
+
+  if (show && !map.hasLayer(plotLayer))  plotLayer.addTo(map);
+  if (!show && map.hasLayer(plotLayer))  map.removeLayer(plotLayer);
+
+  if (show) {
+    plotLayer.eachLayer(function(l) {
+      const visible = (currentRegion === 'ALL' || l._region === currentRegion);
+      const el = l.getElement && l.getElement();
+      if (el) el.style.display = visible ? '' : 'none';
+      if (visible && z >= LABEL_MIN_ZOOM) l.openTooltip();
+      else l.closeTooltip();
+    });
+  }
+
+}
+
+function togglePlots() {
+  plotsEnabled = !plotsEnabled;
+  document.getElementById('plotToggle').classList.toggle('on', plotsEnabled);
+  updatePlots();
+}
+
+// ── Region filter ───────────────────────────────────────────
 function filterRegion(r) {
+  currentRegion = r;
   document.querySelectorAll('.chip').forEach(el => el.classList.remove('active'));
   const sel = r === 'ALL' ? '.chip-all' : (r === 'INW' ? '.chip-inw' : '.chip-ks');
   document.querySelector(sel).classList.add('active');
@@ -744,6 +1032,7 @@ function filterRegion(r) {
   if      (r === 'INW') map.flyTo([46.8, -117.0], 7.5, { duration: 1.2 });
   else if (r === 'K-S') map.flyTo([42.5, -122.5], 8.5, { duration: 1.2 });
   else fitAll();
+  updatePlots();
 }
 
 // Frame ALL trial sites (both regions) so nothing is off-screen by default.
@@ -766,6 +1055,194 @@ function selectInst(csvName, region) {
   catch(e) {}
   closePanel();
 }
+
+// ── Boot: reveal + camera + basemap footnote (runs last, all defs ready) ──────
+// ── Reveal chrome (chips + legend). No splash overlay — map shows at once. ────
+function showChrome() {
+  var ch = document.getElementById('chips'); if (ch) ch.classList.add('on');
+  var lg = document.getElementById('legend'); if (lg) lg.classList.add('on');
+}
+function hideIntro() { showChrome(); }            // kept for error/failsafe hooks
+window.onerror = function() { showChrome(); return false; };
+
+// ── Google-Earth style reveal — visible from frame 1, then glides into the PNW ─
+map.setView([39.5, -109.0], 4, { animate: false });   // western-US overview, instant
+addMarkers();
+initPlots();
+showChrome();
+setTimeout(function () { map.flyTo([45.2, -119.5], 6.2, { duration: 2.2, easeLinearity: 0.2 }); }, 450);
+setTimeout(function () { fitAll(); }, 2900);          // settle framing BOTH regions (PNW)
+
+// ── Basemap source footnote ──────────────────────────────────────────────────
+// Shows the active source and — best-effort — the TRUE per-location capture date
+// from that exact layer's metadata service (the same data Esri's own viewer uses).
+// For Wayback this queries the chosen version's metadata, so the date is honest
+// even when an older snapshot is selected.
+function renderBaseInfo(extra) {
+  // Source/date now lives compactly inside the slider (tb-meta), not a separate
+  // footnote. Shows the live capture info when available, else the static sub.
+  var el = document.getElementById('tb-meta');
+  if (!el) return;
+  el.textContent = extra ? extra : currentSub;
+}
+var _bmReq = 0;
+function fetchMeta() {
+  var myReq = ++_bmReq;
+  try {
+    var c = map.getCenter();
+    var b = map.getBounds();
+    var ext = [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(',');
+    var params = new URLSearchParams({
+      f: 'json',
+      geometry: JSON.stringify({ x: c.lng, y: c.lat }),
+      geometryType: 'esriGeometryPoint', sr: '4326', layers: 'all',
+      tolerance: '1', mapExtent: ext, imageDisplay: '800,600,96',
+      returnGeometry: 'false',
+    });
+    var url = currentMetaUrl + '/identify?' + params.toString();
+    var ctl = new AbortController();
+    var to = setTimeout(function () { ctl.abort(); }, 5000);
+    fetch(url, { signal: ctl.signal })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        clearTimeout(to);
+        if (myReq !== _bmReq) return;          // a newer request superseded this
+        var out = parseEsriMeta(j);
+        if (out) renderBaseInfo(out);
+      })
+      .catch(function () { clearTimeout(to); });
+  } catch (e) {}
+}
+function parseEsriMeta(j) {
+  if (!j || !j.results || !j.results.length) return '';
+  for (var i = 0; i < j.results.length; i++) {
+    var a = j.results[i].attributes || {};
+    var date = '', res = '', src = '';
+    for (var k in a) {
+      var v = a[k]; var kl = k.toLowerCase();
+      var vs = (v === null || v === undefined) ? '' : String(v);
+      if (!vs || vs.toLowerCase() === 'null') continue;
+      if (!date && /date/.test(kl)) date = vs;
+      if (!res  && /(^|_)res/.test(kl) && parseFloat(vs) > 0) res = vs;
+      if (!src  && /desc/.test(kl)) src = vs;
+    }
+    if (date || res) {
+      var s = src ? src.split(',')[0] : 'imagery';
+      if (date) s += ' · ' + fmtDate(date);
+      if (res)  s += ' · ' + res + (/\d$/.test(res) ? ' m' : '');
+      return s;
+    }
+  }
+  return '';
+}
+function fmtDate(d) {
+  var n = Number(d);
+  if (!isNaN(n)) {
+    if (n > 1e11) { try { return new Date(n).toISOString().slice(0, 10); } catch (e) {} }
+    var s = String(d);
+    if (s.length === 8) return s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6, 8);
+    if (s.length === 4) return s;
+  }
+  return String(d);
+}
+var _bmMove = null;
+map.on('moveend', function () {
+  clearTimeout(_bmMove);
+  _bmMove = setTimeout(fetchMeta, 650);
+});
+
+// ── Imagery time slider (bottom) ─────────────────────────────────────────────
+// Built LIVE from Esri's official Wayback release index, so when Esri publishes
+// new imagery the slider gains it automatically — nothing to hand-edit. Falls
+// back to the embedded list only if the index can't be fetched (offline/blocked).
+var WAYBACK_CONFIG_URL = 'https://s3-us-west-2.amazonaws.com/config.maptiles.arcgis.com/waybackconfig.json';
+var STOPS = [];
+
+// From a flat [{date,rel,meta}] list, keep >= 2020 and take the newest release
+// per year; the most-recent year becomes "Latest" (always-current live imagery).
+function buildStops(list) {
+  var byYear = {};
+  list.forEach(function (w) {
+    if (!w.date || w.date < '2020-01-01') return;
+    var y = w.date.slice(0, 4);
+    if (!byYear[y] || w.date > byYear[y].date) byYear[y] = w;
+  });
+  var years = Object.keys(byYear).sort();
+  if (!years.length) return [];
+  var maxYear = years[years.length - 1];
+  var stops = [];
+  years.forEach(function (y) {
+    if (y === maxYear) {
+      stops.push({ label: 'Latest', kind: 'latest', date: '' });
+    } else {
+      var w = byYear[y];
+      stops.push({ label: y, kind: 'wayback', rel: w.rel, meta: w.meta, date: w.date });
+    }
+  });
+  return stops;
+}
+
+function applyStop(idx) {
+  var s = STOPS[idx];
+  if (!s) return;
+  var v = document.getElementById('tb-val');
+  if (v) v.textContent = s.kind === 'latest' ? 'Latest' : s.date;
+  if (s.kind === 'latest') setBasemap('latest');
+  else setBasemap('wayback', s.rel, s.meta, s.date);
+}
+
+function initTimebar(stops) {
+  STOPS = stops;
+  var wrap = document.getElementById('timebar');
+  if (!wrap) return;
+  if (!stops.length) { wrap.style.display = 'none'; return; }
+  var maxIdx = stops.length - 1;
+  var ticks = stops.map(function (s) { return '<span>' + s.label + '</span>'; }).join('');
+  wrap.innerHTML =
+    '<div class="tb-head"><span class="tb-lbl">Imagery</span>' +
+    '<span class="tb-val" id="tb-val">Latest</span>' +
+    '<span class="tb-meta" id="tb-meta"></span>' +
+    '<label class="tb-chk"><input type="checkbox" id="tb-labels" checked> Labels</label></div>' +
+    '<input type="range" id="tb-range" min="0" max="' + maxIdx + '" step="1" value="' + maxIdx + '" ' +
+    'aria-label="Imagery date">' +
+    '<div class="tb-ticks">' + ticks + '</div>';
+  var range = document.getElementById('tb-range');
+  range.addEventListener('input', function () { applyStop(+this.value); });
+  var lc = document.getElementById('tb-labels');
+  if (lc) lc.addEventListener('change', function () {
+    if (this.checked) { labels.addTo(map); labels.setZIndex(10); } else { map.removeLayer(labels); }
+  });
+  applyStop(maxIdx);   // default = Latest (rightmost)
+}
+
+function loadWaybackIndex() {
+  var ctl = new AbortController();
+  var to = setTimeout(function () { ctl.abort(); }, 6000);
+  fetch(WAYBACK_CONFIG_URL, { signal: ctl.signal })
+    .then(function (r) { return r.json(); })
+    .then(function (cfg) {
+      clearTimeout(to);
+      var list = [];
+      for (var rel in cfg) {
+        var it = cfg[rel];
+        if (!it) continue;
+        var m = /(\d{4}-\d{2}-\d{2})/.exec(it.itemTitle || '');
+        if (!m) continue;
+        list.push({ date: m[1], rel: rel, meta: it.metadataLayerUrl || '' });
+      }
+      var stops = buildStops(list);
+      initTimebar(stops.length ? stops : buildStops(WAYBACK_FALLBACK));
+    })
+    .catch(function () {
+      clearTimeout(to);
+      initTimebar(buildStops(WAYBACK_FALLBACK));   // offline / blocked -> embedded
+    });
+}
+
+// Initialise the footnote + the live imagery time slider.
+renderBaseInfo('');
+fetchMeta();
+loadWaybackIndex();
 </script>
 </body>
 </html>"""

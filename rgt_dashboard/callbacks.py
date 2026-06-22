@@ -3,7 +3,7 @@
 All Dash callbacks, registered on the app via :func:`register`.
 
 Three data panels live in the page (toggled by ``_toggle``); the report
-assistant is a floating ForestTask popup. The map tab uses a clientside
+assistant is a floating ForestAsk popup. The map tab uses a clientside
 callback to poll for pin clicks from the embedded Leaflet iframe.
 """
 from __future__ import annotations
@@ -132,6 +132,8 @@ def register(app, store):
         Output("insttype-wrap",  "style"),
         Output("installation-wrap", "style"),
         Output("map-poll",       "disabled"),
+        Output("controls-bar",   "style"),
+        Output("tabs",           "style"),
         Input("tabs", "value"),
     )
     def _toggle(tab):
@@ -141,14 +143,34 @@ def register(app, store):
         # Site Type drives only the Summary tab. The map is opened by the globe
         # button in the topbar (tab == "map"), not a visible tab.
         dim = {"opacity": 0.4, "pointerEvents": "none"}
+        on_map = (tab == "map")
         return (
             {} if tab == "explorer" else hide,
             {} if tab == "summary" else hide,
-            {} if tab == "map"     else hide,
+            {} if on_map else hide,
             {} if tab == "summary" else hide,   # Site Type
             {} if tab == "explorer" else dim,   # Installation
-            tab != "map",   # enable the map poll only while the map is open
+            not on_map,   # enable the map poll only while the map is open
+            # On the map view, hide the filter bar and tab strip so the map gets
+            # the whole window (none of those controls affect the map).
+            hide if on_map else {},             # controls-bar
+            hide if on_map else {},             # tabs strip
         )
+
+    # ---- Reset the map to its default fly-over every time it is opened ------ #
+    app.clientside_callback(
+        """
+        function(tab){
+            if (tab === 'map'){
+                return '/assets/installations_map.html?t=' + Date.now();
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output("map-iframe", "src"),
+        Input("tabs", "value"),
+        prevent_initial_call=True,
+    )
 
     # ---- Shareable links: keep the URL in sync with the view, and restore a
     #      deep-linked view once at load. -----------------------------------=- #
@@ -231,7 +253,26 @@ def register(app, store):
         prevent_initial_call=True,
     )
 
-    # ---- ForestTask popup open/close --------------------------------------- #
+    # ---- map "Fullscreen" button -> native full-screen the map iframe ------- #
+    app.clientside_callback(
+        """
+        function(n){
+            if(!n) return window.dash_clientside.no_update;
+            var f = document.getElementById('map-iframe');
+            if (document.fullscreenElement) {
+                if (document.exitFullscreen) document.exitFullscreen();
+            } else if (f && f.requestFullscreen) {
+                f.requestFullscreen();
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output("map-fs-store", "data"),
+        Input("map-fs-btn", "n_clicks"),
+        prevent_initial_call=True,
+    )
+
+    # ---- ForestAsk popup open/close --------------------------------------- #
     @app.callback(
         Output("assistant-popup", "className"),
         Output("assistant-fab", "style"),
@@ -794,8 +835,9 @@ def _mean_table(plot_df_source):
     return C.data_table(d, height="300px", numeric_cols=plot_cols + ["Overall Avg"])
 
 
-_DEPLOY_COLORS = {"deploy": Color.POSITIVE, "caution": Color.GOLD_INK,
-                  "hold": Color.NEGATIVE, "none": Color.NEUTRAL}
+_DEPLOY_COLORS = {"strong": Color.POSITIVE, "positive": Color.GOLD_INK,
+                  "neutral": Color.NEUTRAL, "negative": Color.NEGATIVE,
+                  "none": Color.NEUTRAL}
 
 
 def _deploy_card(dc):

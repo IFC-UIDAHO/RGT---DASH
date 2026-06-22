@@ -3,7 +3,7 @@
 Page layout -- Modern Theme 2026.
 
 Three main tabs (Plot Explorer, Genetic Gain & Summary, Installations Map)
-live in the page; the report assistant is a floating "ForestTask" chat widget
+live in the page; the report assistant is a floating "ForestAsk" chat widget
 (button bottom-right that opens a popup), available from any tab.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ from .components import dropdown
 
 IFC_LOGO = "https://ifc.nkn.uidaho.edu/static/img/ifc_logo_official.png"
 UI_LOGO  = "https://nextsteps.idaho.gov/assets/uploads/2020/05/LOGO-UIdaho-2020.jpg"
-ASSISTANT_NAME = "ForestTask"
+ASSISTANT_NAME = "ForestAsk"
 
 SUGGESTIONS = [
     "Report on installation HOODOO",
@@ -157,7 +157,7 @@ def _controls(store):
             "current tab.",
             className="controls-note",
         ),
-    ], className="controls")
+    ], className="controls", id="controls-bar")
 
 
 def _explorer_pane():
@@ -246,27 +246,31 @@ def _map_pane():
         html.Div([
             html.Div([
                 html.H3("RGT Installation Map", className="map-pane-title"),
-                html.P(
-                    "Trial sites across INW (Idaho/Washington) and K-S (Oregon). Each pin is "
-                    "coloured by its mean realized gain; grey pins are planned sites not yet "
-                    "measured. Click a pin for year-by-year gain, then 'View in Dashboard'.",
-                    className="map-pane-sub",
+                html.Span(
+                    "Click a pin to fly in and see its plots · the globe button in the header closes the map",
+                    className="map-pane-hint",
                 ),
             ], className="map-pane-info"),
+            html.Button(
+                "⛶ Fullscreen", id="map-fs-btn", className="map-fs-btn", n_clicks=0,
+                title="Expand the map to fill the whole screen (press Esc to exit)",
+            ),
         ], className="map-pane-header"),
         html.Iframe(
             src="/assets/installations_map.html",
             id="map-iframe",
             style={
                 "width": "100%",
-                "height": "calc(100vh - 230px)",
+                "height": "calc(100vh - 150px)",
                 "border": "none",
                 "borderRadius": "12px",
                 "boxShadow": "0 2px 24px rgba(0,0,0,.14)",
             },
+            **{"allow": "fullscreen"},
         ),
         # Store receives {installation, region} when user clicks "View in Dashboard"
         dcc.Store(id="map-click-store", data=None),
+        dcc.Store(id="map-fs-store", data=None),
         # Interval polls window._rgt_selected (set by iframe) every 400 ms
         dcc.Interval(id="map-poll", interval=400, disabled=True),
     ], id="pane-map", style={"display": "none"})
@@ -277,13 +281,9 @@ def _assistant_widget():
     status = ("Connected -- best model auto-selected" if configured
               else "Offline -- add MINDROUTER_API_KEY to .env and restart")
     welcome = (
-        f"Hi, I'm **{ASSISTANT_NAME}** -- IFC's Report Assistant. Two ways to use me:\n\n"
-        "**📄 Reports** — start with *report* (or pick a chip below). I open the panel on "
-        "the right, play a short build animation, and produce a full document with charts, "
-        "tables and written analysis. Takes ~1-2 min. e.g. *report on installation HOODOO*, "
-        "*deployment report for CORE sites*, *report comparing INW vs K-S*.\n\n"
-        "**💬 Quick questions** — ask anything short for an instant inline answer, or say "
-        "*plot the gains* for a quick chart. e.g. *what's the gain at HOODOO in Year 2?*"
+        f"Hi, I'm **{ASSISTANT_NAME}**, IFC's report assistant.\n\n"
+        "Start with **report** for a full write-up, or just ask a quick question.\n\n"
+        "e.g. *report on installation HOODOO* · *what's the gain at HOODOO in Year 2?*"
     )
     fab = html.Button(
         [html.Span(className="fab-dot"), f" {ASSISTANT_NAME}"],
