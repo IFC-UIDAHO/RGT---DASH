@@ -144,6 +144,16 @@ set /p "MSG=  Briefly describe what changed (or press Enter):  "
 if "%MSG%"=="" set "MSG=Update %date% %time%"
 git commit -m "%MSG%"
 echo.
+echo   Syncing with GitHub (pulling any online changes first)...
+git pull --rebase 1>nul 2>nul
+if errorlevel 1 (
+  git rebase --abort 1>nul 2>nul
+  echo   [!] Could not auto-sync with GitHub. It may have online changes that
+  echo       clash with yours, or there is no connection. Ask for help, or in a
+  echo       terminal run:  git pull   ^(resolve any conflicts^)  then option 6.
+  pause
+  goto MENU
+)
 echo   Pushing to GitHub...
 git push
 echo.
