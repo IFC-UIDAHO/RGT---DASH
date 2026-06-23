@@ -1,0 +1,10 @@
+Drop a new full-data Excel workbook (.xlsx, with a "DATA" sheet in the usual
+format) into THIS folder.
+
+If automatic updates are turned on (RGT Dashboard.bat -> "Set up automatic
+updates"), the dashboard will rebuild itself within a minute or two and the new
+numbers appear after the shared server restarts. The processed file is moved into
+the "processed" subfolder with a timestamp, so you always know what was loaded.
+
+K-S sites (Lodgepole, Plan D) are kept automatically - they are not in the INW
+workbook, so they are preserved from the previous data.

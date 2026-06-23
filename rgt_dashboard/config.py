@@ -21,7 +21,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_DIR.parent
 DATA_DIR = PROJECT_ROOT / "data"
 ASSETS_DIR = PROJECT_ROOT / "assets"
-DATA_FILE = Path(os.environ.get("RGT_DATA_FILE", DATA_DIR / "rgt24_new.csv"))
+DATA_FILE = Path(os.environ.get("RGT_DATA_FILE", DATA_DIR / "rgt_data.csv"))
 
 
 # --------------------------------------------------------------------------- #

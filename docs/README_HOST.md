@@ -3,7 +3,7 @@
 A Python **Dash** app (gunicorn + systemd, reverse-proxied by nginx). Public URL:
 **https://ifc.nkn.uidaho.edu/dashapp/** — this replaces the older dashboard at the same path.
 
-Repo: **https://github.com/IFC-UIDAHO/RGT---DASH** · Python 3.10+ · ~60 MB.
+Repo: **https://github.com/IFC-UIDAHO/RGT---DASH** · Python 3.10–3.14 · ~60 MB.
 
 All config files referenced below are in this repo under `deploy/`.
 
@@ -73,7 +73,11 @@ After that, a push from the maintainer → live update in under a minute. Manual
 
 - **Secrets:** `.env` is **not** in the repo. The only secret the host needs is
   `MINDROUTER_API_KEY`, set in the systemd service (step 3). Rotate it in MindRouter if exposed.
-- **Data:** the trial CSVs ship in `data/` (the app loads `data/rgt24_new.csv`).
+- **Data:** the trial CSVs ship in `data/` (the app loads `data/rgt_data.csv`).
 - **Logs:** `journalctl -u rgt-dash -f`.
 - **Path on server:** `deploy.sh` and the service assume `/srv/rgt-dash`; change both if you
   clone elsewhere.
+- **Python:** 3.10–3.14 all work. This gunicorn `app:server` path is unaffected by the
+  Windows dev-server quirk (it never runs Dash's `debug` hot-reload code). `app.py` also
+  carries a self-contained Python 3.14 compat shim, so a newer server interpreter is fine —
+  **no change needed** to `rgt-dash.service`, `nginx-rgt-dash.conf`, `deploy.sh`, or `Procfile`.

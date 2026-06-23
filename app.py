@@ -6,13 +6,36 @@ IFC Realized Genetic Gain Trials -- dashboard entry point.
     gunicorn app:server      # production (server = the Flask WSGI app)
 
 Environment (optional; .env is auto-loaded):
-    RGT_DATA_FILE         alternative CSV (default data/rgt24_new.csv)
+    RGT_DATA_FILE         alternative CSV (default data/rgt_data.csv)
     MINDROUTER_API_KEY    mr2_... key to enable the ForestAsk assistant
 """
 from __future__ import annotations
 
 import logging
 import os
+
+# --- Python 3.14 compatibility shim -------------------------------------------
+# Dash 2.18.x (pinned <3) calls pkgutil.find_loader() in its dev/hot-reload code
+# path. That function was deprecated in Python 3.12 and REMOVED in Python 3.14,
+# so launching with debug=True raises:
+#   AttributeError: module 'pkgutil' has no attribute 'find_loader'
+# Restore it using the modern importlib equivalent. This mirrors exactly what the
+# stdlib used to do (return the module's loader, or None) and is a no-op on
+# Python <= 3.13 where find_loader still exists.
+import pkgutil as _pkgutil
+
+if not hasattr(_pkgutil, "find_loader"):
+    import importlib.util as _importlib_util
+
+    def _find_loader(name):  # faithful stand-in for the removed pkgutil.find_loader
+        try:
+            spec = _importlib_util.find_spec(name)
+        except (ImportError, AttributeError, ValueError):
+            return None
+        return spec.loader if spec is not None else None
+
+    _pkgutil.find_loader = _find_loader
+# -----------------------------------------------------------------------------
 
 import dash
 import dash_bootstrap_components as dbc

@@ -44,7 +44,7 @@ git push -u origin main
 ### 🔐 The secret (read this)
 `.env` holds `MINDROUTER_API_KEY` and is **git‑ignored on purpose — never commit it.**
 On the host, supply the key as an **environment variable** instead (each option below
-shows where). Without it the app still runs; only the ForestTask assistant shows "offline."
+shows where). Without it the app still runs; only the ForestAsk assistant shows "offline."
 
 ---
 
