@@ -18,7 +18,7 @@ def test_installations_measured_per_year(store):
     measured = store.df.dropna(subset=["Value"]).groupby("Year")["Installation"].nunique()
     assert measured["Year1"] == 16
     assert measured["Year2"] == 13
-    assert measured["Year3"] == 6          # Year 3 is under-sampled by design
+    assert measured["Year3"] == 13         # Year 3 now measured at 13 installations (data refresh)
 
 
 def test_growth_means_exclude_dead_and_replacement(store):

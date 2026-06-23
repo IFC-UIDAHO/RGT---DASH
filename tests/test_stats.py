@@ -62,7 +62,7 @@ def test_productivity_relationship_runs(store):
 
 def test_deployment_call_verdict(store):
     dc = stats.deployment_call(store, region="INW", installation="HOODOO")
-    assert dc["level"] in {"deploy", "caution", "hold", "none"}
+    assert dc["level"] in {"strong", "positive", "neutral", "negative", "none"}
     assert dc["n"] >= 1
-    # HOODOO shows large, significant positive gains with low mortality.
-    assert dc["level"] == "deploy"
+    # HOODOO shows large, significant positive gains with acceptable survival -> "strong" (Very positive).
+    assert dc["level"] == "strong"
